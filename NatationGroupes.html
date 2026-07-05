@@ -482,6 +482,7 @@
   let _syncChain = Promise.resolve();
   let _syncScheduled = false;  // au plus 1 sync en attente derrière celui en cours
   let _localDirty = false;     // true = des modifications locales ne sont pas encore dans le Sheet
+  let _forceReplace = false;   // true = prochain sync pousse sans fetch (import complet)
 
   function _offlineStatus(){
     setSyncStatus(_localDirty
@@ -510,12 +511,16 @@
       }
       try{
         setSyncStatus("Synchronisation...");
-        const remote = await fetchRemote();
-        if(Array.isArray(remote)){
-          // Fusion bidirectionnelle : gagne la version la plus récente (updatedAt) par élève
-          students = mergeStudents(students, remote);
-          saveLocal();
-          renderAll();
+        const skipFetch = _forceReplace;
+        _forceReplace = false;
+        if(!skipFetch){
+          const remote = await fetchRemote();
+          if(Array.isArray(remote)){
+            // Fusion bidirectionnelle : gagne la version la plus récente (updatedAt) par élève
+            students = mergeStudents(students, remote);
+            saveLocal();
+            renderAll();
+          }
         }
         await pushRemote(students);
         _localDirty = false;
@@ -718,6 +723,7 @@
         return;
       }
       let added = 0, conserves = 0;
+      _forceReplace = true;
       syncMutate(list=>{
         // Indexer les élèves existants par identité (nom+prénom+classe)
         const existingByKey = {};
