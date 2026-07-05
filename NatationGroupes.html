@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPS : Groupe de Natation pour l'année 2026-2027</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --col-numero:#64748b;
+    --col-nom:#2563eb;
+    --col-prenom:#7c3aed;
+    --col-classe:#ea580c;
+    --col-sexe:#db2777;
+    --col-entree:#4f46e5;
+    --col-ventrale:#0891b2;
+    --col-dorsale:#c026d3;
+    --col-immersion:#e11d48;
+    --col-groupe:#dc2626;
+    --col-commentaire:#ca8a04;
+    --col-statut:#0d9488;
+    --col-actions:#0369a1;
+    --bg:#f1f5f9;
+    --card:#ffffff;
+    --text:#1e293b;
+    --radius:10px;
+    --shadow:0 2px 8px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  header{
+    background:linear-gradient(135deg,#1e3a8a,#2563eb);
+    color:#fff;
+    padding:18px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    box-shadow:var(--shadow);
+  }
+  header h1{
+    margin:0;
+    font-size:1.3rem;
+  }
+  .sync-zone{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:.85rem;
+  }
+  .icon-btn{
+    background:rgba(255,255,255,.15);
+    border:1px solid rgba(255,255,255,.4);
+    color:#fff;
+    border-radius:8px;
+    padding:6px 10px;
+    cursor:pointer;
+    font-size:1rem;
+  }
+  .icon-btn:hover{background:rgba(255,255,255,.3);}
+  nav.tabs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    padding:10px 16px;
+    background:#e2e8f0;
+    position:sticky;
+    top:0;
+    z-index:5;
+  }
+  nav.tabs button{
+    border:none;
+    background:#cbd5e1;
+    color:#1e293b;
+    padding:10px 16px;
+    border-radius:8px 8px 0 0;
+    cursor:pointer;
+    font-weight:600;
+    font-size:.9rem;
+  }
+  nav.tabs button.active{
+    background:#2563eb;
+    color:#fff;
+  }
+  main{padding:16px;}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .btn{
+    border:none;
+    border-radius:8px;
+    padding:10px 16px;
+    font-size:.9rem;
+    font-weight:600;
+    cursor:pointer;
+    color:#fff;
+  }
+  .btn-add{background:#2563eb;}
+  .btn-import{background:#7c3aed;margin-left:auto;}
+  .btn-export{background:#ca8a04;}
+  .btn-cancel{background:#64748b;}
+  .btn-danger{background:#dc2626;}
+  .btn-sync{background:#0891b2;}
+  .btn:hover{filter:brightness(1.1);}
+  .edit-form{
+    display:none;
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:18px;
+    margin-bottom:16px;
+  }
+  .edit-form.show{display:block;}
+  .form-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:12px;
+  }
+  .form-grid label{
+    display:flex;
+    flex-direction:column;
+    font-size:.8rem;
+    font-weight:600;
+    color:#334155;
+    gap:4px;
+  }
+  .form-grid input, .form-grid select, .form-grid textarea{
+    padding:8px;
+    border:1px solid #cbd5e1;
+    border-radius:6px;
+    font-size:.9rem;
+    font-weight:400;
+  }
+  .form-grid input[readonly]{background:#f1f5f9;color:#475569;}
+  .form-actions{
+    margin-top:14px;
+    display:flex;
+    gap:10px;
+  }
+  .table-wrap{
+    overflow-x:auto;
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:1150px;
+  }
+  th,td{
+    padding:10px 12px;
+    text-align:left;
+    font-size:.85rem;
+    border-bottom:1px solid #e2e8f0;
+    white-space:nowrap;
+  }
+  th{
+    cursor:pointer;
+    color:#fff;
+    user-select:none;
+  }
+  th.no-sort{cursor:default;}
+  tr.filter-row th{
+    cursor:default;
+    padding:6px 8px;
+    background:#f8fafc;
+  }
+  tr.filter-row input, tr.filter-row select{
+    width:100%;
+    padding:5px 6px;
+    border:1px solid #cbd5e1;
+    border-radius:5px;
+    font-size:.78rem;
+    font-weight:400;
+    color:#1e293b;
+  }
+  th[data-col="numero"]{background:var(--col-numero);}
+  th[data-col="nom"]{background:var(--col-nom);}
+  th[data-col="prenom"]{background:var(--col-prenom);}
+  th[data-col="classe"]{background:var(--col-classe);}
+  th[data-col="sexe"]{background:var(--col-sexe);}
+  th[data-col="entree"]{background:var(--col-entree);}
+  th[data-col="ventrale"]{background:var(--col-ventrale);}
+  th[data-col="dorsale"]{background:var(--col-dorsale);}
+  th[data-col="immersion"]{background:var(--col-immersion);}
+  th[data-col="groupe"]{background:var(--col-groupe);}
+  th[data-col="commentaire"]{background:var(--col-commentaire);}
+  th[data-col="statut"]{background:var(--col-statut);}
+  th[data-col="actions"]{background:var(--col-actions);}
+  .badge-absent{background:#f97316;color:#fff;}
+  .badge-dispense{background:#6366f1;color:#fff;}
+  .stat-line.stat-absent{background:#fbbf24;}
+  .stat-line.stat-dispense{background:#c4b5fd;}
+  tr:hover td{background:#f8fafc;}
+  .badge{
+    display:inline-block;
+    padding:2px 6px;
+    border-radius:5px;
+    font-size:.72rem;
+    font-weight:700;
+    color:#fff;
+    margin-right:3px;
+  }
+  .badge-TB{background:#39ff14;color:#052e16;}
+  .badge-S{background:#22c55e;}
+  .badge-F{background:#fdba74;color:#7c2d12;}
+  .badge-I{background:#dc2626;}
+  .pill{
+    padding:3px 10px;
+    border-radius:20px;
+    font-size:.75rem;
+    font-weight:700;
+    color:#fff;
+  }
+  .pill-fort{background:#2563eb;}
+  .pill-moyen{background:#f97316;}
+  .pill-non{background:#dc2626;}
+  .row-actions button{
+    border:none;
+    border-radius:6px;
+    padding:5px 9px;
+    color:#fff;
+    font-size:.75rem;
+    cursor:pointer;
+    margin-right:4px;
+  }
+  .btn-edit{background:#7c3aed;}
+  .btn-del{background:#dc2626;}
+  .stats-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:14px;
+  }
+  .stat-card{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px;
+  }
+  .stat-card h3{margin:0 0 10px;color:#1e3a8a;}
+  .stat-line{
+    display:flex;
+    justify-content:space-between;
+    padding:4px 0;
+    font-size:.88rem;
+    border-bottom:1px dashed #e2e8f0;
+  }
+  .stat-line b{color:#0f172a;}
+  .stat-line.stat-fort,.stat-line.stat-moyen,.stat-line.stat-non{
+    flex-direction:column;
+    align-items:stretch;
+    gap:2px;
+    border-radius:6px;
+    padding:6px 8px;
+    border-bottom:none;
+  }
+  .stat-row{display:flex;justify-content:space-between;}
+  .stat-sub{font-size:.72rem;font-weight:400;opacity:.85;}
+  .stat-line.stat-fort{background:#3b82f6;color:#fff;}
+  .stat-line.stat-fort b{color:#fff;}
+  .stat-line.stat-moyen{background:#fed7aa;}
+  .stat-line.stat-non{background:#fecaca;}
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.5);
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal{
+    background:#fff;
+    border-radius:var(--radius);
+    padding:20px;
+    width:min(440px,90vw);
+  }
+  .modal h2{margin-top:0;font-size:1.1rem;}
+  .modal input{
+    width:100%;
+    padding:8px;
+    border:1px solid #cbd5e1;
+    border-radius:6px;
+    margin:8px 0;
+  }
+  .hint{font-size:.78rem;color:#64748b;}
+  .empty-msg{padding:20px;text-align:center;color:#64748b;}
+  @media (min-width:641px) and (max-width:1366px){
+    table{min-width:100%;}
+    th,td{padding:6px 5px;font-size:.7rem;white-space:normal;}
+    .badge{padding:1px 4px;font-size:.6rem;margin-right:2px;}
+    .pill{padding:2px 6px;font-size:.62rem;}
+    .row-actions button{padding:4px 6px;font-size:.68rem;}
+  }
+  @media (max-width:640px){
+    header h1{font-size:1.05rem;}
+    nav.tabs button{padding:8px 10px;font-size:.8rem;}
+    th,td{font-size:.78rem;padding:7px 8px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏊 EPS : Groupe de Natation pour l'année 2026-2027</h1>
+  <div class="sync-zone">
+    <span id="sync-status">Mode local</span>
+    <button class="icon-btn" id="btn-sync-now" title="Synchroniser maintenant">⟳</button>
+    <button class="icon-btn" id="btn-settings" title="Paramètres">⚙</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs-nav"></nav>
+
+<main id="tabs-content"></main>
+
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal" style="width:min(520px,95vw);">
+    <h2>⚙ Paramètres</h2>
+
+    <p class="hint" style="margin-bottom:4px;"><b>URL du Web App Google Apps Script</b></p>
+    <p class="hint">Déployé sur votre Google Sheet partagé (se termine par /exec). Sans cette URL, mode local uniquement.</p>
+    <input type="text" id="input-webapp-url" placeholder="https://script.google.com/macros/s/.../exec">
+
+    <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0;">
+
+    <p class="hint" style="margin-bottom:4px;"><b>Source de la liste des élèves du collège</b></p>
+    <p class="hint">Si la liste d'élèves est dans un <b>autre</b> Google Sheet que celui du Web App, collez son URL ici. Sinon, laissez vide.</p>
+    <input type="text" id="input-college-url" placeholder="https://docs.google.com/spreadsheets/d/... (optionnel)">
+
+    <p class="hint" style="margin:8px 0 4px;"><b>Nom de l'onglet de la liste</b> (laisser vide = "Liste des élèves du collège")</p>
+    <input type="text" id="input-college-sheet" placeholder="Liste des élèves du collège">
+
+    <p class="hint" style="margin-top:8px;">Les colonnes Nom, Prénom, Classe, Sexe sont détectées automatiquement (insensible à la casse et aux accents).</p>
+
+    <div class="form-actions">
+      <button class="btn btn-add" id="btn-save-settings">Enregistrer</button>
+      <button class="btn btn-cancel" id="btn-close-settings">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const CLASSES = ["6ème1","6ème2","6ème3","6ème4"];
+  const STORAGE_KEY = "natation_eleves";
+
+  function normalizeClasse(str){
+    const s = (str||"").toString().trim().toLowerCase().normalize("NFD");
+    let out = "";
+    for(let i=0;i<s.length;i++){
+      const code = s.charCodeAt(i);
+      if(code < 0x300 || code > 0x36f) out += s[i];
+    }
+    return out.replace(/\s+/g,"");
+  }
+  const CLASS_BY_NORMALIZED = {};
+  CLASSES.forEach(c => CLASS_BY_NORMALIZED[normalizeClasse(c)] = c);
+  function resolveClasse(str){
+    return CLASS_BY_NORMALIZED[normalizeClasse(str)] || (str||"").toString().trim();
+  }
+  const SETTINGS_KEY = "natation_settings";
+  const DEFAULT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzvLydFnpV68g5sWz4DBnhjqgESWag2FDQS5dVvDfGJL00WsbfdsoKJCUZWvA3oL0wF/exec";
+
+  const ENTREE_OPTS = [["TB","Plongeon"],["S","Saut"],["I","Descente à l'échelle"]];
+  const VENTRALE_OPTS = [["TB","Crawl aligné"],["S","Corps oblique"],["F","S'arrête"],["I","Impossible"]];
+  const DORSALE_OPTS = [["TB","Dos crawlé aligné"],["S","Dos oblique"],["F","S'arrête"],["I","Impossible"]];
+  const IMMERSION_OPTS = [["TB","Plongeon canard"],["S","Franchit droit"],["F","Touche"],["I","Ne franchit pas"]];
+  const GROUPE_OPTS = [["Fort","Groupe Fort"],["Moyen","Groupe Moyen"],["NonNageur","Groupe Non Nageur"]];
+
+  let students = [];
+  let settings = { webAppUrl:"" };
+  let generalSortState = { col:"nom", dir:1 };
+  let classSortState = {};
+  let generalFilterState = { nom:"", prenom:"", classe:"", sexe:"", entree:"", ventrale:"", dorsale:"", immersion:"", groupe:"", commentaire:"", statut:"" };
+  let classFilterState = {};
+
+  function loadLocal(){
+    try{ students = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ students = []; }
+    try{ settings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { webAppUrl:"" }; }catch(e){ settings = { webAppUrl:"" }; }
+    if(!settings.webAppUrl) settings.webAppUrl = DEFAULT_WEBAPP_URL;
+    if(settings.collegeUrl === undefined) settings.collegeUrl = "";
+    if(settings.collegeSheet === undefined) settings.collegeSheet = "";
+  }
+  function saveLocal(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
+  }
+  function saveSettings(){
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }
+
+  function uid(){
+    return "e_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,7);
+  }
+
+  function nowIso(){
+    return new Date().toISOString();
+  }
+
+  function identityKey(s){
+    return (s.nom||"").trim().toLowerCase() + "|" + (s.prenom||"").trim().toLowerCase() + "|" + (s.classe||"").trim();
+  }
+
+  function moreRecent(a, b){
+    const ta = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+    const tb = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+    return tb >= ta ? b : a;
+  }
+
+  function dedupeByIdentity(list){
+    const byKey = {};
+    list.forEach(s=>{
+      const key = identityKey(s);
+      byKey[key] = byKey[key] ? moreRecent(byKey[key], s) : s;
+    });
+    return Object.values(byKey);
+  }
+
+  function mergeStudents(local, remote){
+    const byId = {};
+    local.forEach(s => byId[s.id] = s);
+    remote.forEach(r => {
+      const existing = byId[r.id];
+      byId[r.id] = existing ? moreRecent(existing, r) : r;
+    });
+    return dedupeByIdentity(Object.values(byId));
+  }
+
+  function setSyncStatus(text){
+    document.getElementById("sync-status").textContent = text;
+  }
+
+  function isValidWebAppUrl(){
+    return /^https:\/\//i.test(settings.webAppUrl || "");
+  }
+
+  async function fetchRemote(){
+    if(!isValidWebAppUrl()) return null;
+    setSyncStatus("Synchronisation...");
+    const res = await fetch(settings.webAppUrl + "?action=getStudents");
+    if(!res.ok) throw new Error("fetch failed");
+    return await res.json();
+  }
+  async function pushRemote(list){
+    if(!isValidWebAppUrl()) return;
+    const res = await fetch(settings.webAppUrl, {
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify({ action:"saveStudents", students:list })
+    });
+    if(!res.ok) throw new Error("push failed: HTTP " + res.status);
+    const body = await res.json().catch(()=>null);
+    if(body && body.error) throw new Error(body.error);
+  }
+  async function fetchCollegeList(){
+    if(!isValidWebAppUrl()) throw new Error("no-url");
+    let url = settings.webAppUrl + "?action=getCollegeList";
+    if(settings.collegeUrl) url += "&spreadsheetUrl=" + encodeURIComponent(settings.collegeUrl);
+    if(settings.collegeSheet) url += "&sheetName=" + encodeURIComponent(settings.collegeSheet);
+    const res = await fetch(url);
+    if(!res.ok) throw new Error("Erreur HTTP " + res.status);
+    const data = await res.json();
+    if(data && data.error) throw new Error(data.error);
+    return data;
+  }
+
+  let _syncChain = Promise.resolve();
+  let _syncScheduled = false;  // au plus 1 sync en attente derrière celui en cours
+  let _localDirty = false;     // true = des modifications locales ne sont pas encore dans le Sheet
+
+  function _offlineStatus(){
+    setSyncStatus(_localDirty
+      ? "⏳ Hors ligne — modifications en attente de synchronisation"
+      : "Hors ligne — données locales à jour");
+  }
+
+  // Dès que la connexion revient, on déclenche une sync automatique
+  window.addEventListener('online', function(){
+    if(isValidWebAppUrl()){
+      setSyncStatus("Connexion rétablie — synchronisation...");
+      _queueSync();
+    }
+  });
+  window.addEventListener('offline', function(){ _offlineStatus(); });
+
+  function _queueSync(){
+    // Si une sync est déjà planifiée derrière celle en cours, inutile d'en ajouter une autre
+    if(_syncScheduled) return _syncChain;
+    _syncScheduled = true;
+    _syncChain = _syncChain.then(async ()=>{
+      _syncScheduled = false;
+      if(!navigator.onLine || !isValidWebAppUrl()){
+        _offlineStatus();
+        return;
+      }
+      try{
+        setSyncStatus("Synchronisation...");
+        const remote = await fetchRemote();
+        if(Array.isArray(remote)){
+          // Fusion bidirectionnelle : gagne la version la plus récente (updatedAt) par élève
+          students = mergeStudents(students, remote);
+          saveLocal();
+          renderAll();
+        }
+        await pushRemote(students);
+        _localDirty = false;
+        setSyncStatus("Synchronisé ✓ " + new Date().toLocaleTimeString());
+      }catch(e){
+        console.error("Erreur de synchronisation:", e);
+        _offlineStatus();
+      }
+    }).catch(()=>{ _syncScheduled = false; });
+    return _syncChain;
+  }
+
+  function syncMutate(mutatorFn){
+    // 1. Mutation locale immédiate avec timestamp "maintenant" → cette version gagnera au merge
+    students = mutatorFn(students.slice());
+    saveLocal();
+    _localDirty = true;
+    renderAll();
+    if(!isValidWebAppUrl()){
+      setSyncStatus(settings.webAppUrl ? "URL invalide - vérifiez les paramètres (⚙)" : "Mode local");
+      return Promise.resolve();
+    }
+    if(!navigator.onLine){
+      _offlineStatus();
+      return Promise.resolve();
+    }
+    // 2. Sync réseau en file (jamais deux en parallèle)
+    return _queueSync();
+  }
+
+  function isDuplicate(list, nom, prenom, classe, excludeId){
+    const n = nom.trim().toLowerCase(), p = prenom.trim().toLowerCase(), c = classe;
+    return list.some(s => s.id !== excludeId && s.nom.trim().toLowerCase()===n && s.prenom.trim().toLowerCase()===p && s.classe===c);
+  }
+
+  function buildTabs(){
+    const nav = document.getElementById("tabs-nav");
+    const content = document.getElementById("tabs-content");
+    const tabs = [{id:"general",label:"Général"}]
+      .concat(CLASSES.map(c=>({id:"classe-"+c,label:c})))
+      .concat([{id:"stats",label:"Statistiques"}]);
+
+    tabs.forEach((t,i)=>{
+      const b = document.createElement("button");
+      b.textContent = t.label;
+      b.dataset.tab = t.id;
+      if(i===0) b.classList.add("active");
+      b.addEventListener("click", ()=> activateTab(t.id));
+      nav.appendChild(b);
+
+      const sec = document.createElement("section");
+      sec.className = "tab-content" + (i===0 ? " active" : "");
+      sec.id = "tab-"+t.id;
+      content.appendChild(sec);
+    });
+
+    buildGeneralTab();
+    CLASSES.forEach(buildClassTab);
+    buildStatsTab();
+  }
+
+  function activateTab(id){
+    document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("active", b.dataset.tab===id));
+    document.querySelectorAll(".tab-content").forEach(s=>s.classList.toggle("active", s.id==="tab-"+id));
+    if(id==="stats") renderStats();
+    if(id.startsWith("classe-")) renderClassTab(id.replace("classe-",""));
+  }
+
+  function levelOptionsHtml(opts){
+    return '<option value="">--</option>' + opts.map(o=>`<option value="${o[0]}">${o[0]} - ${o[1]}</option>`).join("");
+  }
+  function filterOptionsHtml(opts, allLabel){
+    return `<option value="">${allLabel}</option>` + opts.map(o=>`<option value="${o[0]}">${o[0]} - ${o[1]}</option>`).join("");
+  }
+
+  // ===== Onglet Général : identité des élèves (import, suppression) =====
+
+  function buildGeneralTab(){
+    const sec = document.getElementById("tab-general");
+    sec.innerHTML = `
+      <div class="toolbar">
+        <button class="btn btn-add" id="btn-toggle-add-general">+ Ajouter un élève</button>
+        <button class="btn btn-export" id="btn-export-excel">Exporter Excel</button>
+        <button class="btn btn-import" id="btn-import-college">Importer la liste des élèves du collège</button>
+      </div>
+      <form class="edit-form" id="add-form-general">
+        <div class="form-grid">
+          <label>Nom <input type="text" id="add-general-nom" required></label>
+          <label>Prénom <input type="text" id="add-general-prenom" required></label>
+          <label>Classe
+            <select id="add-general-classe">${CLASSES.map(c=>`<option value="${c}">${c}</option>`).join("")}</select>
+          </label>
+          <label>Sexe
+            <select id="add-general-sexe"><option value="Fille">Fille</option><option value="Garçon">Garçon</option></select>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-add">Enregistrer l'élève</button>
+          <button type="button" class="btn btn-cancel" id="btn-cancel-add-general">Annuler</button>
+        </div>
+      </form>
+      <div class="table-wrap">
+        <table id="table-general">
+          <thead>
+            <tr>
+              <th data-col="numero">N°</th>
+              <th data-col="nom">Nom</th>
+              <th data-col="prenom">Prénom</th>
+              <th data-col="classe">Classe</th>
+              <th data-col="sexe">Sexe</th>
+              <th data-col="entree">Entrée dans l'eau</th>
+              <th data-col="ventrale">Nage ventrale</th>
+              <th data-col="dorsale">Nage dorsale</th>
+              <th data-col="immersion">Immersion</th>
+              <th data-col="groupe">Groupe</th>
+              <th data-col="commentaire">Commentaire</th>
+              <th data-col="statut">Statut</th>
+            </tr>
+            <tr class="filter-row">
+              <th></th>
+              <th><input type="text" data-filter="nom" placeholder="Filtrer..."></th>
+              <th><input type="text" data-filter="prenom" placeholder="Filtrer..."></th>
+              <th>
+                <select data-filter="classe"><option value="">Toutes</option>${CLASSES.map(c=>`<option value="${c}">${c}</option>`).join("")}</select>
+              </th>
+              <th>
+                <select data-filter="sexe"><option value="">Tous</option><option value="Fille">Fille</option><option value="Garçon">Garçon</option></select>
+              </th>
+              <th><select data-filter="entree">${filterOptionsHtml(ENTREE_OPTS,"Tous")}</select></th>
+              <th><select data-filter="ventrale">${filterOptionsHtml(VENTRALE_OPTS,"Tous")}</select></th>
+              <th><select data-filter="dorsale">${filterOptionsHtml(DORSALE_OPTS,"Tous")}</select></th>
+              <th><select data-filter="immersion">${filterOptionsHtml(IMMERSION_OPTS,"Tous")}</select></th>
+              <th><select data-filter="groupe">${filterOptionsHtml(GROUPE_OPTS,"Tous")}</select></th>
+              <th><input type="text" data-filter="commentaire" placeholder="Filtrer..."></th>
+              <th><select data-filter="statut"><option value="">Tous</option><option value="Absent">Absent</option><option value="Dispensé">Dispensé</option></select></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    `;
+
+    document.getElementById("btn-import-college").addEventListener("click", importCollegeList);
+    document.getElementById("btn-export-excel").addEventListener("click", ()=>exportExcel(null));
+
+    document.getElementById("btn-toggle-add-general").addEventListener("click", ()=>{
+      document.getElementById("add-form-general").classList.toggle("show");
+    });
+    document.getElementById("btn-cancel-add-general").addEventListener("click", ()=>{
+      document.getElementById("add-form-general").classList.remove("show");
+    });
+    document.getElementById("add-form-general").addEventListener("submit", onSubmitAddStudentGeneral);
+
+    sec.querySelectorAll("th[data-col]:not(.no-sort)").forEach(th=>{
+      th.addEventListener("click", ()=>{
+        const col = th.dataset.col;
+        generalSortState.dir = (generalSortState.col===col) ? -generalSortState.dir : 1;
+        generalSortState.col = col;
+        renderGeneralTable();
+      });
+    });
+
+    sec.querySelectorAll("[data-filter]").forEach(el=>{
+      el.addEventListener("input", ()=>{
+        generalFilterState[el.dataset.filter] = el.value;
+        renderGeneralTable();
+      });
+      el.addEventListener("change", ()=>{
+        generalFilterState[el.dataset.filter] = el.value;
+        renderGeneralTable();
+      });
+    });
+  }
+
+  function deleteStudent(id){
+    const s = students.find(x=>x.id===id);
+    if(!s) return;
+    if(!confirm(`Supprimer ${s.prenom} ${s.nom} (${s.classe}) ?`)) return;
+    syncMutate(list => list.filter(x=>x.id!==id));
+  }
+
+  async function importCollegeList(){
+    if(!isValidWebAppUrl()){
+      alert("Configurez d'abord l'URL du Web App Google Apps Script dans les paramètres (⚙).");
+      return;
+    }
+    try{
+      setSyncStatus("Import en cours...");
+      const collegeList = await fetchCollegeList();
+      if(!Array.isArray(collegeList)){
+        throw new Error("Réponse inattendue du serveur");
+      }
+      if(collegeList.length === 0){
+        setSyncStatus("Import : aucun élève trouvé");
+        alert("L'onglet source ne contient aucun élève, ou les colonnes n'ont pas été reconnues.\n\nVérifiez dans les paramètres (⚙) :\n• Le nom exact de l'onglet\n• L'URL du Google Sheet (si différent du sheet principal)");
+        return;
+      }
+      let added = 0;
+      syncMutate(list=>{
+        collegeList.forEach(r=>{
+          const classe = resolveClasse(r.classe);
+          if(!isDuplicate(list, r.nom, r.prenom, classe)){
+            list.push({
+              id:uid(), nom:r.nom, prenom:r.prenom, classe:classe, sexe:r.sexe,
+              entree:"", ventrale:"", dorsale:"", immersion:"", groupe:"", commentaire:"", statut:"",
+              updatedAt: nowIso()
+            });
+            added++;
+          }
+        });
+        return list;
+      });
+      setSyncStatus("Import terminé ✓ — " + added + " élève(s) ajouté(s) sur " + collegeList.length);
+    }catch(e){
+      setSyncStatus("Erreur d'import");
+      alert("Erreur lors de l'import :\n" + e.message + "\n\nVérifiez les paramètres (⚙) et la connexion internet.");
+    }
+  }
+
+  // ===== Affichage commun (badges, tri) =====
+
+  function levelBadge(code){
+    if(!code) return "";
+    return `<span class="badge badge-${code}">${code}</span>`;
+  }
+  function groupePill(g){
+    if(!g) return "";
+    const map = {Fort:["pill-fort","Fort"],Moyen:["pill-moyen","Moyen"],NonNageur:["pill-non","Non Nageur"]};
+    const m = map[g];
+    if(!m) return "";
+    return `<span class="pill ${m[0]}">${m[1]}</span>`;
+  }
+
+  function statutBadge(statut){
+    if(!statut) return "";
+    if(statut==="Absent") return `<span class="badge badge-absent">Absent</span>`;
+    if(statut==="Dispensé") return `<span class="badge badge-dispense">Dispensé</span>`;
+    return "";
+  }
+
+  function applyFilters(list, filters){
+    const keys = Object.keys(filters).filter(k => filters[k]);
+    if(keys.length===0) return list;
+    return list.filter(s => keys.every(k=>{
+      const needle = filters[k].toLowerCase();
+      return (s[k]||"").toString().toLowerCase().includes(needle);
+    }));
+  }
+
+  function sortedStudents(list, state){
+    if(!state.col) return list;
+    const col = state.col;
+    return list.slice().sort((a,b)=>{
+      if(col==="numero"){ return 0; }
+      const va = (a[col]||"").toString().toLowerCase();
+      const vb = (b[col]||"").toString().toLowerCase();
+      if(va<vb) return -1*state.dir;
+      if(va>vb) return 1*state.dir;
+      return 0;
+    });
+  }
+
+  function renderGeneralTable(){
+    const tbody = document.querySelector("#table-general tbody");
+    if(!tbody) return;
+    const list = sortedStudents(applyFilters(students, generalFilterState), generalSortState);
+    if(list.length===0){
+      const msg = students.length===0 ? "Aucun élève. Importez la liste du collège pour commencer." : "Aucun élève ne correspond aux filtres.";
+      tbody.innerHTML = `<tr><td colspan="12" class="empty-msg">${msg}</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = list.map((s,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td>${s.nom}</td>
+        <td>${s.prenom}</td>
+        <td>${s.classe}</td>
+        <td>${s.sexe}</td>
+        <td>${levelBadge(s.entree)}</td>
+        <td>${levelBadge(s.ventrale)}</td>
+        <td>${levelBadge(s.dorsale)}</td>
+        <td>${levelBadge(s.immersion)}</td>
+        <td>${groupePill(s.groupe)}</td>
+        <td>${s.commentaire||""}</td>
+        <td>${statutBadge(s.statut)}</td>
+      </tr>
+    `).join("");
+  }
+
+  // ===== Onglets de classe : saisie des résultats de natation =====
+
+  function buildClassTab(classe){
+    const sec = document.getElementById("tab-classe-"+classe);
+    sec.innerHTML = `
+      <div class="toolbar">
+        <button class="btn btn-add" data-toggle-add="${classe}">+ Ajouter un élève</button>
+        <button class="btn btn-export" data-export-classe="${classe}">Exporter Excel</button>
+      </div>
+      <form class="edit-form" id="add-form-${classe}">
+        <div class="form-grid">
+          <label>Nom <input type="text" id="add-${classe}-nom" required></label>
+          <label>Prénom <input type="text" id="add-${classe}-prenom" required></label>
+          <label>Sexe
+            <select id="add-${classe}-sexe"><option value="Fille">Fille</option><option value="Garçon">Garçon</option></select>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-add">Enregistrer l'élève</button>
+          <button type="button" class="btn btn-cancel" data-cancel-add="${classe}">Annuler</button>
+        </div>
+      </form>
+      <div class="stats-grid" id="stats-${classe}" style="margin-bottom:16px;"></div>
+      <form class="edit-form" id="results-form-${classe}">
+        <p class="hint">Élève : <b id="results-name-${classe}"></b></p>
+        <div class="form-grid">
+          <label>Entrée dans l'eau
+            <select id="f-${classe}-entree">${levelOptionsHtml(ENTREE_OPTS)}</select>
+          </label>
+          <label>Nage ventrale (15m)
+            <select id="f-${classe}-ventrale">${levelOptionsHtml(VENTRALE_OPTS)}</select>
+          </label>
+          <label>Nage dorsale (10m)
+            <select id="f-${classe}-dorsale">${levelOptionsHtml(DORSALE_OPTS)}</select>
+          </label>
+          <label>Immersion
+            <select id="f-${classe}-immersion">${levelOptionsHtml(IMMERSION_OPTS)}</select>
+          </label>
+          <label>Groupe
+            <select id="f-${classe}-groupe">${levelOptionsHtml(GROUPE_OPTS)}</select>
+          </label>
+          <label>Statut
+            <select id="f-${classe}-statut">
+              <option value="">Présent(e)</option>
+              <option value="Absent">Absent(e)</option>
+              <option value="Dispensé">Dispensé(e)</option>
+            </select>
+          </label>
+          <label>Commentaires <textarea id="f-${classe}-commentaire" rows="2"></textarea></label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-add">Enregistrer les résultats</button>
+          <button type="button" class="btn btn-cancel" data-cancel-results="${classe}">Annuler</button>
+        </div>
+      </form>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-col="numero">N°</th>
+              <th data-col="nom">Nom</th>
+              <th data-col="prenom">Prénom</th>
+              <th data-col="sexe">Sexe</th>
+              <th data-col="entree">Entrée dans l'eau</th>
+              <th data-col="ventrale">Nage ventrale</th>
+              <th data-col="dorsale">Nage dorsale</th>
+              <th data-col="immersion">Immersion</th>
+              <th data-col="groupe">Groupe</th>
+              <th data-col="commentaire">Commentaire</th>
+              <th data-col="statut">Statut</th>
+              <th data-col="actions" class="no-sort">Actions</th>
+            </tr>
+            <tr class="filter-row">
+              <th></th>
+              <th><input type="text" data-filter="nom" placeholder="Filtrer..."></th>
+              <th><input type="text" data-filter="prenom" placeholder="Filtrer..."></th>
+              <th>
+                <select data-filter="sexe"><option value="">Tous</option><option value="Fille">Fille</option><option value="Garçon">Garçon</option></select>
+              </th>
+              <th><select data-filter="entree">${filterOptionsHtml(ENTREE_OPTS,"Tous")}</select></th>
+              <th><select data-filter="ventrale">${filterOptionsHtml(VENTRALE_OPTS,"Tous")}</select></th>
+              <th><select data-filter="dorsale">${filterOptionsHtml(DORSALE_OPTS,"Tous")}</select></th>
+              <th><select data-filter="immersion">${filterOptionsHtml(IMMERSION_OPTS,"Tous")}</select></th>
+              <th><select data-filter="groupe">${filterOptionsHtml(GROUPE_OPTS,"Tous")}</select></th>
+              <th><input type="text" data-filter="commentaire" placeholder="Filtrer..."></th>
+              <th><select data-filter="statut"><option value="">Tous</option><option value="Absent">Absent</option><option value="Dispensé">Dispensé</option></select></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-${classe}"></tbody>
+        </table>
+      </div>
+    `;
+
+    sec.querySelector("[data-export-classe]").addEventListener("click", ()=>exportExcel(classe));
+    sec.querySelector(`#results-form-${classe}`).addEventListener("submit", (e)=>onSubmitResultsForm(e, classe));
+    sec.querySelector(`[data-cancel-results="${classe}"]`).addEventListener("click", ()=>{
+      document.getElementById(`results-form-${classe}`).classList.remove("show");
+    });
+
+    sec.querySelector(`[data-toggle-add="${classe}"]`).addEventListener("click", ()=>{
+      document.getElementById(`add-form-${classe}`).classList.toggle("show");
+    });
+    sec.querySelector(`[data-cancel-add="${classe}"]`).addEventListener("click", ()=>{
+      document.getElementById(`add-form-${classe}`).classList.remove("show");
+    });
+    sec.querySelector(`#add-form-${classe}`).addEventListener("submit", (e)=>onSubmitAddStudentForm(e, classe));
+
+    classSortState[classe] = { col:"nom", dir:1 };
+    classFilterState[classe] = { nom:"", prenom:"", sexe:"", entree:"", ventrale:"", dorsale:"", immersion:"", groupe:"", commentaire:"", statut:"" };
+    sec.querySelectorAll("th[data-col]:not(.no-sort)").forEach(th=>{
+      th.addEventListener("click", ()=>{
+        const col = th.dataset.col;
+        const st = classSortState[classe];
+        st.dir = (st.col===col) ? -st.dir : 1;
+        st.col = col;
+        renderClassTab(classe);
+      });
+    });
+
+    sec.querySelectorAll("[data-filter]").forEach(el=>{
+      el.addEventListener("input", ()=>{
+        classFilterState[classe][el.dataset.filter] = el.value;
+        renderClassTab(classe);
+      });
+      el.addEventListener("change", ()=>{
+        classFilterState[classe][el.dataset.filter] = el.value;
+        renderClassTab(classe);
+      });
+    });
+  }
+
+  let editingResultsId = {};
+  let editingResultsSnapshot = {};
+
+  function startEditResults(classe, id){
+    const s = students.find(x=>x.id===id);
+    if(!s) return;
+    editingResultsId[classe] = id;
+    editingResultsSnapshot[classe] = { nom:s.nom, prenom:s.prenom, classe:s.classe, sexe:s.sexe };
+    document.getElementById(`results-name-${classe}`).textContent = `${s.prenom} ${s.nom}`;
+    document.getElementById(`f-${classe}-entree`).value = s.entree;
+    document.getElementById(`f-${classe}-ventrale`).value = s.ventrale;
+    document.getElementById(`f-${classe}-dorsale`).value = s.dorsale;
+    document.getElementById(`f-${classe}-immersion`).value = s.immersion;
+    document.getElementById(`f-${classe}-groupe`).value = s.groupe;
+    document.getElementById(`f-${classe}-commentaire`).value = s.commentaire;
+    document.getElementById(`f-${classe}-statut`).value = s.statut || "";
+    const form = document.getElementById(`results-form-${classe}`);
+    form.classList.add("show");
+    form.scrollIntoView({behavior:"smooth"});
+  }
+
+  function onSubmitAddStudentGeneral(e){
+    e.preventDefault();
+    const nom = document.getElementById("add-general-nom").value.trim();
+    const prenom = document.getElementById("add-general-prenom").value.trim();
+    const classe = document.getElementById("add-general-classe").value;
+    const sexe = document.getElementById("add-general-sexe").value;
+    if(!nom || !prenom){ alert("Nom et prénom sont obligatoires."); return; }
+
+    syncMutate(list=>{
+      if(isDuplicate(list, nom, prenom, classe)){
+        alert("Cet élève est déjà inscrit dans cette classe.");
+        return list;
+      }
+      list.push({
+        id:uid(), nom, prenom, classe, sexe,
+        entree:"", ventrale:"", dorsale:"", immersion:"", groupe:"", commentaire:"", statut:"",
+        updatedAt: nowIso()
+      });
+      return list;
+    });
+
+    document.getElementById("add-form-general").classList.remove("show");
+    document.getElementById("add-general-nom").value = "";
+    document.getElementById("add-general-prenom").value = "";
+    document.getElementById("add-general-classe").value = CLASSES[0];
+    document.getElementById("add-general-sexe").value = "Fille";
+  }
+
+  function onSubmitAddStudentForm(e, classe){
+    e.preventDefault();
+    const nom = document.getElementById(`add-${classe}-nom`).value.trim();
+    const prenom = document.getElementById(`add-${classe}-prenom`).value.trim();
+    const sexe = document.getElementById(`add-${classe}-sexe`).value;
+    if(!nom || !prenom){ alert("Nom et prénom sont obligatoires."); return; }
+
+    syncMutate(list=>{
+      if(isDuplicate(list, nom, prenom, classe)){
+        alert("Cet élève est déjà inscrit dans cette classe.");
+        return list;
+      }
+      list.push({
+        id:uid(), nom, prenom, classe, sexe,
+        entree:"", ventrale:"", dorsale:"", immersion:"", groupe:"", commentaire:"", statut:"",
+        updatedAt: nowIso()
+      });
+      return list;
+    });
+
+    document.getElementById(`add-form-${classe}`).classList.remove("show");
+    document.getElementById(`add-${classe}-nom`).value = "";
+    document.getElementById(`add-${classe}-prenom`).value = "";
+    document.getElementById(`add-${classe}-sexe`).value = "Fille";
+  }
+
+  function onSubmitResultsForm(e, classe){
+    e.preventDefault();
+    const id = editingResultsId[classe];
+    if(!id) return;
+    const data = {
+      entree: document.getElementById(`f-${classe}-entree`).value,
+      ventrale: document.getElementById(`f-${classe}-ventrale`).value,
+      dorsale: document.getElementById(`f-${classe}-dorsale`).value,
+      immersion: document.getElementById(`f-${classe}-immersion`).value,
+      groupe: document.getElementById(`f-${classe}-groupe`).value,
+      statut: document.getElementById(`f-${classe}-statut`).value,
+      commentaire: document.getElementById(`f-${classe}-commentaire`).value.trim(),
+      updatedAt: nowIso()
+    };
+    syncMutate(list=>{
+      const idx = list.findIndex(s=>s.id===id);
+      if(idx>-1){
+        Object.assign(list[idx], data);
+      }else{
+        const snapshot = editingResultsSnapshot[classe] || {};
+        list.push(Object.assign({id}, snapshot, data));
+      }
+      return list;
+    });
+    document.getElementById(`results-form-${classe}`).classList.remove("show");
+  }
+
+  function computeStats(list){
+    const inGroup = (g) => list.filter(s=>s.groupe===g);
+    const inStatut = (st) => list.filter(s=>s.statut===st);
+    const sexCount = (arr, sexe) => arr.filter(s=>s.sexe===sexe).length;
+    const fortArr = inGroup("Fort"), moyenArr = inGroup("Moyen"), nonArr = inGroup("NonNageur");
+    const absentArr = inStatut("Absent"), dispenseArr = inStatut("Dispensé");
+    return {
+      total:list.length,
+      filles:sexCount(list,"Fille"),
+      garcons:sexCount(list,"Garçon"),
+      fort:fortArr.length,
+      fortFilles:sexCount(fortArr,"Fille"),
+      fortGarcons:sexCount(fortArr,"Garçon"),
+      moyen:moyenArr.length,
+      moyenFilles:sexCount(moyenArr,"Fille"),
+      moyenGarcons:sexCount(moyenArr,"Garçon"),
+      nonNageur:nonArr.length,
+      nonNageurFilles:sexCount(nonArr,"Fille"),
+      nonNageurGarcons:sexCount(nonArr,"Garçon"),
+      absent:absentArr.length,
+      absentFilles:sexCount(absentArr,"Fille"),
+      absentGarcons:sexCount(absentArr,"Garçon"),
+      dispense:dispenseArr.length,
+      dispenseFilles:sexCount(dispenseArr,"Fille"),
+      dispenseGarcons:sexCount(dispenseArr,"Garçon")
+    };
+  }
+
+  function classStats(classe){
+    return computeStats(students.filter(s=>s.classe===classe));
+  }
+
+  function statCardHtml(title, st){
+    return `
+      <div class="stat-card">
+        <h3>${title}</h3>
+        <div class="stat-line">Nombre d'élèves <b>${st.total}</b></div>
+        <div class="stat-line">Filles <b>${st.filles}</b></div>
+        <div class="stat-line">Garçons <b>${st.garcons}</b></div>
+        <div class="stat-line stat-fort">
+          <div class="stat-row">Groupe fort <b>${st.fort}</b></div>
+          <div class="stat-sub">Filles : ${st.fortFilles} — Garçons : ${st.fortGarcons}</div>
+        </div>
+        <div class="stat-line stat-moyen">
+          <div class="stat-row">Groupe moyen <b>${st.moyen}</b></div>
+          <div class="stat-sub">Filles : ${st.moyenFilles} — Garçons : ${st.moyenGarcons}</div>
+        </div>
+        <div class="stat-line stat-non">
+          <div class="stat-row">Groupe non nageur <b>${st.nonNageur}</b></div>
+          <div class="stat-sub">Filles : ${st.nonNageurFilles} — Garçons : ${st.nonNageurGarcons}</div>
+        </div>
+        <div class="stat-line stat-absent">
+          <div class="stat-row">Absent(e)s <b>${st.absent}</b></div>
+          <div class="stat-sub">Filles : ${st.absentFilles} — Garçons : ${st.absentGarcons}</div>
+        </div>
+        <div class="stat-line stat-dispense">
+          <div class="stat-row">Dispensé(e)s <b>${st.dispense}</b></div>
+          <div class="stat-sub">Filles : ${st.dispenseFilles} — Garçons : ${st.dispenseGarcons}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderClassTab(classe){
+    const tbody = document.getElementById("tbody-"+classe);
+    if(!tbody) return;
+    const classList = students.filter(s=>s.classe===classe);
+    const list = sortedStudents(applyFilters(classList, classFilterState[classe] || {}), classSortState[classe] || {col:null,dir:1});
+    if(list.length===0){
+      const msg = classList.length===0 ? "Aucun élève dans cette classe. Importez la liste depuis l'onglet Général." : "Aucun élève ne correspond aux filtres.";
+      tbody.innerHTML = `<tr><td colspan="12" class="empty-msg">${msg}</td></tr>`;
+    }else{
+      tbody.innerHTML = list.map((s,i)=>`
+        <tr>
+          <td>${i+1}</td>
+          <td>${s.nom}</td>
+          <td>${s.prenom}</td>
+          <td>${s.sexe}</td>
+          <td>${levelBadge(s.entree)}</td>
+          <td>${levelBadge(s.ventrale)}</td>
+          <td>${levelBadge(s.dorsale)}</td>
+          <td>${levelBadge(s.immersion)}</td>
+          <td>${groupePill(s.groupe)}</td>
+          <td>${s.commentaire||""}</td>
+          <td>${statutBadge(s.statut)}</td>
+          <td class="row-actions">
+            <button class="btn-edit" data-edit-results="${s.id}">Modifier</button>
+            <button class="btn-del" data-del="${s.id}">Supprimer</button>
+          </td>
+        </tr>
+      `).join("");
+      tbody.querySelectorAll("[data-edit-results]").forEach(b=> b.addEventListener("click", ()=>startEditResults(classe, b.dataset.editResults)));
+      tbody.querySelectorAll("[data-del]").forEach(b=> b.addEventListener("click", ()=>deleteStudent(b.dataset.del)));
+    }
+    document.getElementById("stats-"+classe).innerHTML = statCardHtml(classe, classStats(classe));
+  }
+
+  // ===== Statistiques globales =====
+
+  function buildStatsTab(){
+    document.getElementById("tab-stats").innerHTML = `
+      <div class="stats-grid" id="stats-global"></div>
+      <h3 style="margin:24px 0 12px;color:#1e3a8a;">Statistiques regroupées</h3>
+      <div class="stats-grid" id="stats-groupes"></div>
+    `;
+  }
+  function combinedStats(classesArr){
+    return computeStats(students.filter(s=>classesArr.includes(s.classe)));
+  }
+
+  function renderStats(){
+    const el = document.getElementById("stats-global");
+    const cards = CLASSES.map(c=>statCardHtml(c, classStats(c)));
+    el.innerHTML = statCardHtml("Toutes classes", computeStats(students)) + cards.join("");
+
+    document.getElementById("stats-groupes").innerHTML =
+      statCardHtml("6ème1 + 6ème3", combinedStats(["6ème1","6ème3"]))
+      + statCardHtml("6ème2 + 6ème4", combinedStats(["6ème2","6ème4"]));
+  }
+
+  function renderAll(){
+    renderGeneralTable();
+    CLASSES.forEach(renderClassTab);
+    renderStats();
+  }
+
+  // ===== Export Excel (Général ou une classe) =====
+
+  function exportExcel(classeFilter){
+    if(typeof XLSX === "undefined"){
+      alert("Bibliothèque d'export indisponible (connexion internet requise).");
+      return;
+    }
+    const source = classeFilter ? students.filter(s=>s.classe===classeFilter) : students;
+    const rows = source.map((s,i)=>({
+      "N°": i+1,
+      "Nom": s.nom,
+      "Prénom": s.prenom,
+      "Classe": s.classe,
+      "Sexe": s.sexe,
+      "Entrée dans l'eau": s.entree,
+      "Nage ventrale": s.ventrale,
+      "Nage dorsale": s.dorsale,
+      "Immersion": s.immersion,
+      "Groupe": s.groupe,
+      "Commentaire": s.commentaire,
+      "Statut": s.statut || ""
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Eleves");
+    const suffix = classeFilter ? "_" + classeFilter : "";
+    XLSX.writeFile(wb, `Eleves_Natation_2026-2027${suffix}.xlsx`);
+  }
+
+  // ===== Paramètres / synchronisation =====
+
+  function initSettingsModal(){
+    const overlay = document.getElementById("settings-modal");
+    document.getElementById("btn-settings").addEventListener("click", ()=>{
+      document.getElementById("input-webapp-url").value = settings.webAppUrl||"";
+      document.getElementById("input-college-url").value = settings.collegeUrl||"";
+      document.getElementById("input-college-sheet").value = settings.collegeSheet||"";
+      overlay.classList.add("show");
+    });
+    document.getElementById("btn-close-settings").addEventListener("click", ()=> overlay.classList.remove("show"));
+    document.getElementById("btn-save-settings").addEventListener("click", ()=>{
+      const url = document.getElementById("input-webapp-url").value.trim();
+      if(url && !/^https:\/\//i.test(url)){
+        alert("L'URL du Web App doit commencer par https://. Elle n'a pas été enregistrée.");
+        return;
+      }
+      const collegeUrl = document.getElementById("input-college-url").value.trim();
+      if(collegeUrl && !/^https:\/\//i.test(collegeUrl)){
+        alert("L'URL du Google Sheet source doit commencer par https://. Elle n'a pas été enregistrée.");
+        return;
+      }
+      settings.webAppUrl = url;
+      settings.collegeUrl = collegeUrl;
+      settings.collegeSheet = document.getElementById("input-college-sheet").value.trim();
+      saveSettings();
+      overlay.classList.remove("show");
+      if(settings.webAppUrl && navigator.onLine) _queueSync();
+      else setSyncStatus(settings.webAppUrl ? (navigator.onLine ? "Configuré" : "⏳ Hors ligne — synchronisation dès reconnexion") : "Mode local");
+    });
+    document.getElementById("btn-sync-now").addEventListener("click", ()=> syncMutate(list=>list));
+  }
+
+  function autoSyncTick(){
+    if(!isValidWebAppUrl() || !navigator.onLine) return;
+    _queueSync();
+  }
+
+  async function init(){
+    loadLocal();
+    buildTabs();
+    initSettingsModal();
+    renderAll();
+    if(!navigator.onLine){
+      _offlineStatus();
+    } else if(isValidWebAppUrl()){
+      setSyncStatus("Synchronisation au démarrage...");
+      _queueSync();
+    } else {
+      setSyncStatus(settings.webAppUrl ? "Mode local (URL invalide)" : "Mode local");
+    }
+    setInterval(autoSyncTick, 30000);
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>
