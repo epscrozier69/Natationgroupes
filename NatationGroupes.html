@@ -713,22 +713,40 @@
         alert("L'onglet source ne contient aucun élève, ou les colonnes n'ont pas été reconnues.\n\nVérifiez dans les paramètres (⚙) :\n• Le nom exact de l'onglet\n• L'URL du Google Sheet (si différent du sheet principal)");
         return;
       }
-      let added = 0;
+      if(!confirm(collegeList.length + " élève(s) trouvé(s) dans le fichier source.\n\nCet import va remplacer la liste actuelle par cette liste.\nLes résultats d'évaluation déjà saisis seront conservés pour les élèves reconnus.\n\nContinuer ?")){
+        setSyncStatus("Import annulé");
+        return;
+      }
+      let added = 0, conserves = 0;
       syncMutate(list=>{
+        // Indexer les élèves existants par identité (nom+prénom+classe)
+        const existingByKey = {};
+        list.forEach(s=>{
+          const k = (s.nom||"").trim().toLowerCase()+"|"+(s.prenom||"").trim().toLowerCase()+"|"+(s.classe||"").trim();
+          existingByKey[k] = s;
+        });
+        // Reconstruire la liste depuis la source en conservant les résultats
+        const newList = [];
         collegeList.forEach(r=>{
           const classe = resolveClasse(r.classe);
-          if(!isDuplicate(list, r.nom, r.prenom, classe)){
-            list.push({
-              id:uid(), nom:r.nom, prenom:r.prenom, classe:classe, sexe:r.sexe,
+          const k = (r.nom||"").trim().toLowerCase()+"|"+(r.prenom||"").trim().toLowerCase()+"|"+classe;
+          const existing = existingByKey[k];
+          if(existing){
+            // Élève déjà connu : mise à jour de l'identité, résultats conservés
+            newList.push(Object.assign({}, existing, { nom:r.nom, prenom:r.prenom, classe, sexe:r.sexe }));
+            conserves++;
+          } else {
+            newList.push({
+              id:uid(), nom:r.nom, prenom:r.prenom, classe, sexe:r.sexe,
               entree:"", ventrale:"", dorsale:"", immersion:"", groupe:"", commentaire:"", statut:"",
               updatedAt: nowIso()
             });
             added++;
           }
         });
-        return list;
+        return newList;
       });
-      setSyncStatus("Import terminé ✓ — " + added + " élève(s) ajouté(s) sur " + collegeList.length);
+      setSyncStatus("Import terminé ✓ — " + added + " ajouté(s), " + conserves + " conservé(s) avec résultats");
     }catch(e){
       setSyncStatus("Erreur d'import");
       alert("Erreur lors de l'import :\n" + e.message + "\n\nVérifiez les paramètres (⚙) et la connexion internet.");
