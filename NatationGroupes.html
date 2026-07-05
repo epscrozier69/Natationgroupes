@@ -227,13 +227,14 @@
   .pill-fort{background:#2563eb;}
   .pill-moyen{background:#f97316;}
   .pill-non{background:#dc2626;}
+  .row-actions{display:flex;align-items:center;gap:6px;}
   .row-actions button{
     border:none;
     border-radius:6px;
     cursor:pointer;
-    margin-right:4px;
     color:#fff;
     font-weight:600;
+    white-space:nowrap;
   }
   .btn-edit{
     background:#7c3aed;
@@ -245,19 +246,25 @@
     padding:5px 10px;
     font-size:.75rem;
     opacity:.75;
+    margin-left:8px;
+  }
+  .results-modal-card{
+    background:#fff;
+    border-radius:var(--radius);
+    padding:22px;
+    width:min(600px,96vw);
+    max-height:92vh;
+    overflow-y:auto;
   }
   .results-student-header{
     background:linear-gradient(135deg,#2563eb,#7c3aed);
     color:#fff;
     border-radius:10px;
-    padding:14px 18px;
-    margin-bottom:14px;
-    display:flex;
-    align-items:center;
-    gap:10px;
+    padding:16px 20px;
+    margin-bottom:18px;
   }
-  .results-student-header .label{font-size:.85rem;opacity:.85;}
-  .results-student-header .name{font-size:1.4rem;font-weight:700;}
+  .results-student-header .label{font-size:.9rem;opacity:.85;margin-bottom:4px;}
+  .results-student-header .name{font-size:1.6rem;font-weight:700;line-height:1.2;}
   .stats-grid{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
@@ -362,6 +369,36 @@
       <button class="btn btn-add" id="btn-save-settings">Enregistrer</button>
       <button class="btn btn-cancel" id="btn-close-settings">Fermer</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="results-modal">
+  <div class="results-modal-card">
+    <div class="results-student-header">
+      <div class="label">Saisie des résultats</div>
+      <div class="name" id="modal-results-name"></div>
+    </div>
+    <form id="modal-results-form">
+      <div class="form-grid">
+        <label>Entrée dans l'eau <select id="modal-entree"></select></label>
+        <label>Nage ventrale (15m) <select id="modal-ventrale"></select></label>
+        <label>Nage dorsale (10m) <select id="modal-dorsale"></select></label>
+        <label>Immersion <select id="modal-immersion"></select></label>
+        <label>Groupe <select id="modal-groupe"></select></label>
+        <label>Statut
+          <select id="modal-statut">
+            <option value="">Présent(e)</option>
+            <option value="Absent">Absent(e)</option>
+            <option value="Dispensé">Dispensé(e)</option>
+          </select>
+        </label>
+        <label>Commentaires <textarea id="modal-commentaire" rows="2"></textarea></label>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-add">Enregistrer les résultats</button>
+        <button type="button" class="btn btn-cancel" id="modal-results-cancel">Annuler</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -864,43 +901,6 @@
         </div>
       </form>
       <div class="stats-grid" id="stats-${classe}" style="margin-bottom:16px;"></div>
-      <form class="edit-form" id="results-form-${classe}">
-        <div class="results-student-header">
-          <div>
-            <div class="label">Saisie des résultats</div>
-            <div class="name" id="results-name-${classe}"></div>
-          </div>
-        </div>
-        <div class="form-grid">
-          <label>Entrée dans l'eau
-            <select id="f-${classe}-entree">${levelOptionsHtml(ENTREE_OPTS)}</select>
-          </label>
-          <label>Nage ventrale (15m)
-            <select id="f-${classe}-ventrale">${levelOptionsHtml(VENTRALE_OPTS)}</select>
-          </label>
-          <label>Nage dorsale (10m)
-            <select id="f-${classe}-dorsale">${levelOptionsHtml(DORSALE_OPTS)}</select>
-          </label>
-          <label>Immersion
-            <select id="f-${classe}-immersion">${levelOptionsHtml(IMMERSION_OPTS)}</select>
-          </label>
-          <label>Groupe
-            <select id="f-${classe}-groupe">${levelOptionsHtml(GROUPE_OPTS)}</select>
-          </label>
-          <label>Statut
-            <select id="f-${classe}-statut">
-              <option value="">Présent(e)</option>
-              <option value="Absent">Absent(e)</option>
-              <option value="Dispensé">Dispensé(e)</option>
-            </select>
-          </label>
-          <label>Commentaires <textarea id="f-${classe}-commentaire" rows="2"></textarea></label>
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-add">Enregistrer les résultats</button>
-          <button type="button" class="btn btn-cancel" data-cancel-results="${classe}">Annuler</button>
-        </div>
-      </form>
       <div class="table-wrap">
         <table>
           <thead>
@@ -941,10 +941,6 @@
     `;
 
     sec.querySelector("[data-export-classe]").addEventListener("click", ()=>exportExcel(classe));
-    sec.querySelector(`#results-form-${classe}`).addEventListener("submit", (e)=>onSubmitResultsForm(e, classe));
-    sec.querySelector(`[data-cancel-results="${classe}"]`).addEventListener("click", ()=>{
-      document.getElementById(`results-form-${classe}`).classList.remove("show");
-    });
 
     sec.querySelector(`[data-toggle-add="${classe}"]`).addEventListener("click", ()=>{
       document.getElementById(`add-form-${classe}`).classList.toggle("show");
@@ -981,22 +977,23 @@
   let editingResultsId = {};
   let editingResultsSnapshot = {};
 
+  let _currentEditClasse = null;
+
   function startEditResults(classe, id){
     const s = students.find(x=>x.id===id);
     if(!s) return;
+    _currentEditClasse = classe;
     editingResultsId[classe] = id;
     editingResultsSnapshot[classe] = { nom:s.nom, prenom:s.prenom, classe:s.classe, sexe:s.sexe };
-    document.getElementById(`results-name-${classe}`).textContent = `${s.prenom} ${s.nom}`;
-    document.getElementById(`f-${classe}-entree`).value = s.entree;
-    document.getElementById(`f-${classe}-ventrale`).value = s.ventrale;
-    document.getElementById(`f-${classe}-dorsale`).value = s.dorsale;
-    document.getElementById(`f-${classe}-immersion`).value = s.immersion;
-    document.getElementById(`f-${classe}-groupe`).value = s.groupe;
-    document.getElementById(`f-${classe}-commentaire`).value = s.commentaire;
-    document.getElementById(`f-${classe}-statut`).value = s.statut || "";
-    const form = document.getElementById(`results-form-${classe}`);
-    form.classList.add("show");
-    form.scrollIntoView({behavior:"smooth"});
+    document.getElementById("modal-results-name").textContent = `${s.prenom} ${s.nom}`;
+    document.getElementById("modal-entree").value = s.entree;
+    document.getElementById("modal-ventrale").value = s.ventrale;
+    document.getElementById("modal-dorsale").value = s.dorsale;
+    document.getElementById("modal-immersion").value = s.immersion;
+    document.getElementById("modal-groupe").value = s.groupe;
+    document.getElementById("modal-commentaire").value = s.commentaire;
+    document.getElementById("modal-statut").value = s.statut || "";
+    document.getElementById("results-modal").classList.add("show");
   }
 
   function onSubmitAddStudentGeneral(e){
@@ -1053,18 +1050,20 @@
     document.getElementById(`add-${classe}-sexe`).value = "Fille";
   }
 
-  function onSubmitResultsForm(e, classe){
+  function onSubmitResultsForm(e){
     e.preventDefault();
+    const classe = _currentEditClasse;
+    if(!classe) return;
     const id = editingResultsId[classe];
     if(!id) return;
     const data = {
-      entree: document.getElementById(`f-${classe}-entree`).value,
-      ventrale: document.getElementById(`f-${classe}-ventrale`).value,
-      dorsale: document.getElementById(`f-${classe}-dorsale`).value,
-      immersion: document.getElementById(`f-${classe}-immersion`).value,
-      groupe: document.getElementById(`f-${classe}-groupe`).value,
-      statut: document.getElementById(`f-${classe}-statut`).value,
-      commentaire: document.getElementById(`f-${classe}-commentaire`).value.trim(),
+      entree: document.getElementById("modal-entree").value,
+      ventrale: document.getElementById("modal-ventrale").value,
+      dorsale: document.getElementById("modal-dorsale").value,
+      immersion: document.getElementById("modal-immersion").value,
+      groupe: document.getElementById("modal-groupe").value,
+      statut: document.getElementById("modal-statut").value,
+      commentaire: document.getElementById("modal-commentaire").value.trim(),
       updatedAt: nowIso()
     };
     syncMutate(list=>{
@@ -1077,7 +1076,7 @@
       }
       return list;
     });
-    document.getElementById(`results-form-${classe}`).classList.remove("show");
+    document.getElementById("results-modal").classList.remove("show");
   }
 
   function computeStats(list){
@@ -1264,10 +1263,23 @@
     _queueSync();
   }
 
+  function initResultsModal(){
+    document.getElementById("modal-entree").innerHTML = levelOptionsHtml(ENTREE_OPTS);
+    document.getElementById("modal-ventrale").innerHTML = levelOptionsHtml(VENTRALE_OPTS);
+    document.getElementById("modal-dorsale").innerHTML = levelOptionsHtml(DORSALE_OPTS);
+    document.getElementById("modal-immersion").innerHTML = levelOptionsHtml(IMMERSION_OPTS);
+    document.getElementById("modal-groupe").innerHTML = levelOptionsHtml(GROUPE_OPTS);
+    document.getElementById("modal-results-form").addEventListener("submit", onSubmitResultsForm);
+    document.getElementById("modal-results-cancel").addEventListener("click", ()=>{
+      document.getElementById("results-modal").classList.remove("show");
+    });
+  }
+
   async function init(){
     loadLocal();
     buildTabs();
     initSettingsModal();
+    initResultsModal();
     renderAll();
     if(!navigator.onLine){
       _offlineStatus();
