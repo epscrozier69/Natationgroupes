@@ -335,16 +335,7 @@
     <p class="hint">Déployé sur votre Google Sheet partagé (se termine par /exec). Sans cette URL, mode local uniquement.</p>
     <input type="text" id="input-webapp-url" placeholder="https://script.google.com/macros/s/.../exec">
 
-    <hr style="margin:16px 0;border:none;border-top:1px solid #e2e8f0;">
-
-    <p class="hint" style="margin-bottom:4px;"><b>Source de la liste des élèves du collège</b></p>
-    <p class="hint">Si la liste d'élèves est dans un <b>autre</b> Google Sheet que celui du Web App, collez son URL ici. Sinon, laissez vide.</p>
-    <input type="text" id="input-college-url" placeholder="https://docs.google.com/spreadsheets/d/... (optionnel)">
-
-    <p class="hint" style="margin:8px 0 4px;"><b>Nom de l'onglet de la liste</b> (laisser vide = "Liste des élèves du collège")</p>
-    <input type="text" id="input-college-sheet" placeholder="Liste des élèves du collège">
-
-    <p class="hint" style="margin-top:8px;">Les colonnes Nom, Prénom, Classe, Sexe sont détectées automatiquement (insensible à la casse et aux accents).</p>
+    <p class="hint" style="margin-top:8px;">L'import lit l'onglet "Liste des élèves du collège" de votre Google Sheet. Les colonnes Nom, Prénom, Classe, Sexe sont détectées automatiquement.</p>
 
     <div class="form-actions">
       <button class="btn btn-add" id="btn-save-settings">Enregistrer</button>
@@ -394,8 +385,6 @@
     try{ students = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ students = []; }
     try{ settings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { webAppUrl:"" }; }catch(e){ settings = { webAppUrl:"" }; }
     if(!settings.webAppUrl) settings.webAppUrl = DEFAULT_WEBAPP_URL;
-    if(settings.collegeUrl === undefined) settings.collegeUrl = "";
-    if(settings.collegeSheet === undefined) settings.collegeSheet = "";
   }
   function saveLocal(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
@@ -470,8 +459,6 @@
   async function fetchCollegeList(){
     if(!isValidWebAppUrl()) throw new Error("no-url");
     let url = settings.webAppUrl + "?action=getCollegeList";
-    if(settings.collegeUrl) url += "&spreadsheetUrl=" + encodeURIComponent(settings.collegeUrl);
-    if(settings.collegeSheet) url += "&sheetName=" + encodeURIComponent(settings.collegeSheet);
     const res = await fetch(url);
     if(!res.ok) throw new Error("Erreur HTTP " + res.status);
     const data = await res.json();
@@ -723,35 +710,38 @@
         return;
       }
       let added = 0, conserves = 0;
-      _forceReplace = true;
-      syncMutate(list=>{
-        // Indexer les élèves existants par identité (nom+prénom+classe)
-        const existingByKey = {};
-        list.forEach(s=>{
-          const k = (s.nom||"").trim().toLowerCase()+"|"+(s.prenom||"").trim().toLowerCase()+"|"+(s.classe||"").trim();
-          existingByKey[k] = s;
-        });
-        // Reconstruire la liste depuis la source en conservant les résultats
-        const newList = [];
-        collegeList.forEach(r=>{
-          const classe = resolveClasse(r.classe);
-          const k = (r.nom||"").trim().toLowerCase()+"|"+(r.prenom||"").trim().toLowerCase()+"|"+classe;
-          const existing = existingByKey[k];
-          if(existing){
-            // Élève déjà connu : mise à jour de l'identité, résultats conservés
-            newList.push(Object.assign({}, existing, { nom:r.nom, prenom:r.prenom, classe, sexe:r.sexe }));
-            conserves++;
-          } else {
-            newList.push({
-              id:uid(), nom:r.nom, prenom:r.prenom, classe, sexe:r.sexe,
-              entree:"", ventrale:"", dorsale:"", immersion:"", groupe:"", commentaire:"", statut:"",
-              updatedAt: nowIso()
-            });
-            added++;
-          }
-        });
-        return newList;
+      // Construire la nouvelle liste en conservant les résultats des élèves reconnus
+      const existingByKey = {};
+      students.forEach(s=>{
+        const k = (s.nom||"").trim().toLowerCase()+"|"+(s.prenom||"").trim().toLowerCase()+"|"+(s.classe||"").trim();
+        existingByKey[k] = s;
       });
+      const newList = [];
+      collegeList.forEach(r=>{
+        const classe = resolveClasse(r.classe);
+        const k = (r.nom||"").trim().toLowerCase()+"|"+(r.prenom||"").trim().toLowerCase()+"|"+classe;
+        const existing = existingByKey[k];
+        if(existing){
+          newList.push(Object.assign({}, existing, { nom:r.nom, prenom:r.prenom, classe, sexe:r.sexe }));
+          conserves++;
+        } else {
+          newList.push({
+            id:uid(), nom:r.nom, prenom:r.prenom, classe, sexe:r.sexe,
+            entree:"", ventrale:"", dorsale:"", immersion:"", groupe:"", commentaire:"", statut:"",
+            updatedAt: nowIso()
+          });
+          added++;
+        }
+      });
+      // Appliquer localement et pousser directement (sans récupérer l'ancien Sheet)
+      students = newList;
+      saveLocal();
+      _localDirty = false;
+      renderAll();
+      if(isValidWebAppUrl() && navigator.onLine){
+        setSyncStatus("Import — envoi vers Google Sheet...");
+        await pushRemote(students);
+      }
       setSyncStatus("Import terminé ✓ — " + added + " ajouté(s), " + conserves + " conservé(s) avec résultats");
     }catch(e){
       setSyncStatus("Erreur d'import");
@@ -1224,8 +1214,6 @@
     const overlay = document.getElementById("settings-modal");
     document.getElementById("btn-settings").addEventListener("click", ()=>{
       document.getElementById("input-webapp-url").value = settings.webAppUrl||"";
-      document.getElementById("input-college-url").value = settings.collegeUrl||"";
-      document.getElementById("input-college-sheet").value = settings.collegeSheet||"";
       overlay.classList.add("show");
     });
     document.getElementById("btn-close-settings").addEventListener("click", ()=> overlay.classList.remove("show"));
@@ -1235,14 +1223,7 @@
         alert("L'URL du Web App doit commencer par https://. Elle n'a pas été enregistrée.");
         return;
       }
-      const collegeUrl = document.getElementById("input-college-url").value.trim();
-      if(collegeUrl && !/^https:\/\//i.test(collegeUrl)){
-        alert("L'URL du Google Sheet source doit commencer par https://. Elle n'a pas été enregistrée.");
-        return;
-      }
       settings.webAppUrl = url;
-      settings.collegeUrl = collegeUrl;
-      settings.collegeSheet = document.getElementById("input-college-sheet").value.trim();
       saveSettings();
       overlay.classList.remove("show");
       if(settings.webAppUrl && navigator.onLine) _queueSync();
