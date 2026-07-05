@@ -441,7 +441,7 @@
   async function fetchRemote(){
     if(!isValidWebAppUrl()) return null;
     setSyncStatus("Synchronisation...");
-    const res = await fetch(settings.webAppUrl + "?action=getStudents");
+    const res = await fetch(settings.webAppUrl + "?action=getStudents", { credentials:"omit" });
     if(!res.ok) throw new Error("fetch failed");
     return await res.json();
   }
@@ -449,6 +449,7 @@
     if(!isValidWebAppUrl()) return;
     const res = await fetch(settings.webAppUrl, {
       method:"POST",
+      credentials:"omit",
       headers:{ "Content-Type":"text/plain;charset=utf-8" },
       body: JSON.stringify({ action:"saveStudents", students:list })
     });
@@ -459,7 +460,7 @@
   async function fetchCollegeList(){
     if(!isValidWebAppUrl()) throw new Error("no-url");
     let url = settings.webAppUrl + "?action=getCollegeList";
-    const res = await fetch(url);
+    const res = await fetch(url, { credentials:"omit" });
     if(!res.ok) throw new Error("Erreur HTTP " + res.status);
     const data = await res.json();
     if(data && data.error) throw new Error(data.error);
