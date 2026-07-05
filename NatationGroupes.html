@@ -78,11 +78,11 @@
     border:none;
     background:#cbd5e1;
     color:#1e293b;
-    padding:10px 16px;
+    padding:12px 18px;
     border-radius:8px 8px 0 0;
     cursor:pointer;
     font-weight:600;
-    font-size:.9rem;
+    font-size:1rem;
   }
   nav.tabs button.active{
     background:#2563eb;
@@ -100,8 +100,8 @@
   .btn{
     border:none;
     border-radius:8px;
-    padding:10px 16px;
-    font-size:.9rem;
+    padding:11px 18px;
+    font-size:1rem;
     font-weight:600;
     cursor:pointer;
     color:#fff;
@@ -160,9 +160,9 @@
     min-width:1150px;
   }
   th,td{
-    padding:10px 12px;
+    padding:11px 12px;
     text-align:left;
-    font-size:.85rem;
+    font-size:.95rem;
     border-bottom:1px solid #e2e8f0;
     white-space:nowrap;
   }
@@ -206,9 +206,9 @@
   tr:hover td{background:#f8fafc;}
   .badge{
     display:inline-block;
-    padding:2px 6px;
+    padding:3px 7px;
     border-radius:5px;
-    font-size:.72rem;
+    font-size:.8rem;
     font-weight:700;
     color:#fff;
     margin-right:3px;
@@ -218,9 +218,9 @@
   .badge-F{background:#fdba74;color:#7c2d12;}
   .badge-I{background:#dc2626;}
   .pill{
-    padding:3px 10px;
+    padding:4px 12px;
     border-radius:20px;
-    font-size:.75rem;
+    font-size:.85rem;
     font-weight:700;
     color:#fff;
   }
@@ -230,14 +230,24 @@
   .row-actions button{
     border:none;
     border-radius:6px;
-    padding:5px 9px;
-    color:#fff;
-    font-size:.75rem;
     cursor:pointer;
     margin-right:4px;
+    color:#fff;
+    font-weight:600;
   }
-  .btn-edit{background:#7c3aed;}
-  .btn-del{background:#dc2626;}
+  .btn-edit{
+    background:#7c3aed;
+    padding:8px 14px;
+    font-size:.9rem;
+  }
+  .btn-del{
+    background:none;
+    border:1px solid #dc2626;
+    color:#dc2626;
+    padding:5px 9px;
+    font-size:.75rem;
+    opacity:.8;
+  }
   .stats-grid{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
@@ -300,15 +310,16 @@
   .empty-msg{padding:20px;text-align:center;color:#64748b;}
   @media (min-width:641px) and (max-width:1366px){
     table{min-width:100%;}
-    th,td{padding:6px 5px;font-size:.7rem;white-space:normal;}
-    .badge{padding:1px 4px;font-size:.6rem;margin-right:2px;}
-    .pill{padding:2px 6px;font-size:.62rem;}
-    .row-actions button{padding:4px 6px;font-size:.68rem;}
+    th,td{padding:9px 8px;font-size:.9rem;white-space:normal;}
+    .badge{padding:3px 6px;font-size:.78rem;margin-right:2px;}
+    .pill{padding:3px 10px;font-size:.82rem;}
+    .btn-edit{padding:9px 16px;font-size:.92rem;}
+    .btn-del{padding:6px 10px;font-size:.78rem;}
   }
   @media (max-width:640px){
     header h1{font-size:1.05rem;}
-    nav.tabs button{padding:8px 10px;font-size:.8rem;}
-    th,td{font-size:.78rem;padding:7px 8px;}
+    nav.tabs button{padding:8px 10px;font-size:.88rem;}
+    th,td{font-size:.88rem;padding:8px 8px;}
   }
 </style>
 </head>
