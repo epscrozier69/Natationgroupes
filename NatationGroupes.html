@@ -430,7 +430,7 @@
   const VENTRALE_OPTS = [["TB","Crawl aligné"],["S","Corps oblique"],["F","S'arrête"],["I","Impossible"]];
   const DORSALE_OPTS = [["TB","Dos crawlé aligné"],["S","Dos oblique"],["F","S'arrête"],["I","Impossible"]];
   const IMMERSION_OPTS = [["TB","Plongeon canard"],["S","Franchit droit"],["F","Touche"],["I","Ne franchit pas"]];
-  const GROUPE_OPTS = [["Fort","Groupe Fort"],["Moyen","Groupe Moyen"],["NonNageur","Groupe Non Nageur"]];
+  const GROUPE_OPTS = [["Fort","Groupe Fort"],["Moyen","Groupe Moyen"],["Non nageur","Groupe Non Nageur"]];
 
   let students = [];
   let settings = { webAppUrl:"" };
@@ -816,7 +816,7 @@
   }
   function groupePill(g){
     if(!g) return "";
-    const map = {Fort:["pill-fort","Fort"],Moyen:["pill-moyen","Moyen"],NonNageur:["pill-non","Non Nageur"]};
+    const map = {Fort:["pill-fort","Fort"],Moyen:["pill-moyen","Moyen"],"Non nageur":["pill-non","Non Nageur"]};
     const m = map[g];
     if(!m) return "";
     return `<span class="pill ${m[0]}">${m[1]}</span>`;
@@ -1083,7 +1083,7 @@
     const inGroup = (g) => list.filter(s=>s.groupe===g);
     const inStatut = (st) => list.filter(s=>s.statut===st);
     const sexCount = (arr, sexe) => arr.filter(s=>s.sexe===sexe).length;
-    const fortArr = inGroup("Fort"), moyenArr = inGroup("Moyen"), nonArr = inGroup("NonNageur");
+    const fortArr = inGroup("Fort"), moyenArr = inGroup("Moyen"), nonArr = inGroup("Non nageur");
     const absentArr = inStatut("Absent"), dispenseArr = inStatut("Dispensé");
     return {
       total:list.length,
