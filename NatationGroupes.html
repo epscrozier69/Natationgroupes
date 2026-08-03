@@ -157,8 +157,9 @@
   table{
     width:100%;
     border-collapse:collapse;
-    min-width:1150px;
+    min-width:900px;
   }
+  .btn-icon{display:none;}
   th,td{
     padding:11px 12px;
     text-align:left;
@@ -248,6 +249,35 @@
     opacity:.75;
     margin-left:8px;
   }
+  .option-field{margin-bottom:16px;}
+  .option-label{font-size:.88rem;font-weight:700;color:#334155;margin-bottom:8px;}
+  .option-group{display:flex;flex-wrap:wrap;gap:8px;}
+  .option-btn{
+    border:2px solid #cbd5e1;
+    border-radius:10px;
+    padding:10px 12px;
+    background:#f8fafc;
+    color:#475569;
+    cursor:pointer;
+    font-size:.88rem;
+    font-weight:700;
+    flex:1;
+    min-width:70px;
+    text-align:center;
+    line-height:1.3;
+    transition:all .12s;
+  }
+  .option-btn:active{transform:scale(.95);}
+  .option-btn[data-value="TB"].selected{background:#22c55e;border-color:#22c55e;color:#fff;}
+  .option-btn[data-value="S"].selected{background:#86efac;border-color:#86efac;color:#14532d;}
+  .option-btn[data-value="F"].selected{background:#fdba74;border-color:#fdba74;color:#7c2d12;}
+  .option-btn[data-value="I"].selected{background:#dc2626;border-color:#dc2626;color:#fff;}
+  .option-btn[data-value="Fort"].selected{background:#2563eb;border-color:#2563eb;color:#fff;}
+  .option-btn[data-value="Moyen"].selected{background:#f97316;border-color:#f97316;color:#fff;}
+  .option-btn[data-value="Non nageur"].selected{background:#dc2626;border-color:#dc2626;color:#fff;}
+  .option-btn[data-value=""].selected{background:#22c55e;border-color:#22c55e;color:#fff;}
+  .option-btn[data-value="Absent"].selected{background:#f97316;border-color:#f97316;color:#fff;}
+  .option-btn[data-value="Dispensé"].selected{background:#6366f1;border-color:#6366f1;color:#fff;}
   .results-modal-card{
     background:#fff;
     border-radius:var(--radius);
@@ -326,12 +356,15 @@
   .hint{font-size:.78rem;color:#64748b;}
   .empty-msg{padding:20px;text-align:center;color:#64748b;}
   @media (min-width:641px) and (max-width:1366px){
-    table{min-width:100%;}
-    th,td{padding:9px 8px;font-size:.9rem;white-space:normal;}
-    .badge{padding:3px 6px;font-size:.78rem;margin-right:2px;}
-    .pill{padding:3px 10px;font-size:.82rem;}
-    .btn-edit{padding:10px 18px;font-size:.95rem;}
-    .btn-del{padding:6px 10px;font-size:.78rem;opacity:.75;}
+    table{min-width:0;width:100%;}
+    th,td{padding:7px 5px;font-size:.82rem;white-space:normal;word-break:break-word;}
+    .badge{padding:2px 5px;font-size:.72rem;margin-right:1px;}
+    .pill{padding:2px 7px;font-size:.75rem;}
+    .btn-label{display:none;}
+    .btn-icon{display:inline;}
+    .btn-edit{padding:8px 10px;font-size:1rem;}
+    .btn-del{padding:6px 8px;font-size:.9rem;opacity:.75;}
+    .row-actions{gap:4px;}
   }
   @media (max-width:640px){
     header h1{font-size:1.05rem;}
@@ -373,33 +406,7 @@
 </div>
 
 <div class="modal-overlay" id="results-modal">
-  <div class="results-modal-card">
-    <div class="results-student-header">
-      <div class="label">Saisie des résultats</div>
-      <div class="name" id="modal-results-name"></div>
-    </div>
-    <form id="modal-results-form">
-      <div class="form-grid">
-        <label>Entrée dans l'eau <select id="modal-entree"></select></label>
-        <label>Nage ventrale (15m) <select id="modal-ventrale"></select></label>
-        <label>Nage dorsale (10m) <select id="modal-dorsale"></select></label>
-        <label>Immersion <select id="modal-immersion"></select></label>
-        <label>Groupe <select id="modal-groupe"></select></label>
-        <label>Statut
-          <select id="modal-statut">
-            <option value="">Présent(e)</option>
-            <option value="Absent">Absent(e)</option>
-            <option value="Dispensé">Dispensé(e)</option>
-          </select>
-        </label>
-        <label>Commentaires <textarea id="modal-commentaire" rows="2"></textarea></label>
-      </div>
-      <div class="form-actions">
-        <button type="submit" class="btn btn-add">Enregistrer les résultats</button>
-        <button type="button" class="btn btn-cancel" id="modal-results-cancel">Annuler</button>
-      </div>
-    </form>
-  </div>
+  <div class="results-modal-card" id="results-modal-card"></div>
 </div>
 
 <script>
@@ -986,13 +993,13 @@
     editingResultsId[classe] = id;
     editingResultsSnapshot[classe] = { nom:s.nom, prenom:s.prenom, classe:s.classe, sexe:s.sexe };
     document.getElementById("modal-results-name").textContent = `${s.prenom} ${s.nom}`;
-    document.getElementById("modal-entree").value = s.entree;
-    document.getElementById("modal-ventrale").value = s.ventrale;
-    document.getElementById("modal-dorsale").value = s.dorsale;
-    document.getElementById("modal-immersion").value = s.immersion;
-    document.getElementById("modal-groupe").value = s.groupe;
+    setOptionGroup("modal-entree", s.entree);
+    setOptionGroup("modal-ventrale", s.ventrale);
+    setOptionGroup("modal-dorsale", s.dorsale);
+    setOptionGroup("modal-immersion", s.immersion);
+    setOptionGroup("modal-groupe", s.groupe);
+    setOptionGroup("modal-statut", s.statut || "");
     document.getElementById("modal-commentaire").value = s.commentaire;
-    document.getElementById("modal-statut").value = s.statut || "";
     document.getElementById("results-modal").classList.add("show");
   }
 
@@ -1165,8 +1172,8 @@
           <td>${s.commentaire||""}</td>
           <td>${statutBadge(s.statut)}</td>
           <td class="row-actions">
-            <button class="btn-edit" data-edit-results="${s.id}">Modifier</button>
-            <button class="btn-del" data-del="${s.id}">Supprimer</button>
+            <button class="btn-edit" data-edit-results="${s.id}" title="Modifier"><span class="btn-label">Modifier</span><span class="btn-icon" aria-hidden="true">✏</span></button>
+            <button class="btn-del" data-del="${s.id}" title="Supprimer"><span class="btn-label">Supprimer</span><span class="btn-icon" aria-hidden="true">✕</span></button>
           </td>
         </tr>
       `).join("");
@@ -1263,12 +1270,66 @@
     _queueSync();
   }
 
+  function buildOptionField(fieldId, label, opts){
+    const btns = opts.map(([val, desc])=>{
+      const inner = val && val !== desc
+        ? `<b>${val}</b><br><small>${desc}</small>`
+        : `<b>${desc}</b>`;
+      return `<button type="button" class="option-btn" data-value="${val}">${inner}</button>`;
+    }).join("");
+    return `<div class="option-field">
+      <div class="option-label">${label}</div>
+      <input type="hidden" id="${fieldId}">
+      <div class="option-group" data-field="${fieldId}">${btns}</div>
+    </div>`;
+  }
+
+  function setOptionGroup(fieldId, value){
+    const v = value || "";
+    document.getElementById(fieldId).value = v;
+    const group = document.querySelector(`.option-group[data-field="${fieldId}"]`);
+    if(!group) return;
+    group.querySelectorAll(".option-btn").forEach(btn=>{
+      btn.classList.toggle("selected", btn.dataset.value === v);
+    });
+  }
+
   function initResultsModal(){
-    document.getElementById("modal-entree").innerHTML = levelOptionsHtml(ENTREE_OPTS);
-    document.getElementById("modal-ventrale").innerHTML = levelOptionsHtml(VENTRALE_OPTS);
-    document.getElementById("modal-dorsale").innerHTML = levelOptionsHtml(DORSALE_OPTS);
-    document.getElementById("modal-immersion").innerHTML = levelOptionsHtml(IMMERSION_OPTS);
-    document.getElementById("modal-groupe").innerHTML = levelOptionsHtml(GROUPE_OPTS);
+    const card = document.getElementById("results-modal-card");
+    const STATUT_OPTS = [["","Présent(e)"],["Absent","Absent(e)"],["Dispensé","Dispensé(e)"]];
+    card.innerHTML = `
+      <div class="results-student-header">
+        <div class="label">Saisie des résultats</div>
+        <div class="name" id="modal-results-name"></div>
+      </div>
+      <form id="modal-results-form">
+        ${buildOptionField("modal-entree","Entrée dans l'eau",ENTREE_OPTS)}
+        ${buildOptionField("modal-ventrale","Nage ventrale (15m)",VENTRALE_OPTS)}
+        ${buildOptionField("modal-dorsale","Nage dorsale (10m)",DORSALE_OPTS)}
+        ${buildOptionField("modal-immersion","Immersion",IMMERSION_OPTS)}
+        ${buildOptionField("modal-groupe","Groupe",GROUPE_OPTS)}
+        ${buildOptionField("modal-statut","Statut",STATUT_OPTS)}
+        <div class="option-field">
+          <div class="option-label">Commentaires</div>
+          <textarea id="modal-commentaire" rows="2" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:.95rem;box-sizing:border-box;"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-add">Enregistrer les résultats</button>
+          <button type="button" class="btn btn-cancel" id="modal-results-cancel">Annuler</button>
+        </div>
+      </form>`;
+
+    card.querySelectorAll(".option-group").forEach(group=>{
+      group.querySelectorAll(".option-btn").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const fieldId = group.dataset.field;
+          document.getElementById(fieldId).value = btn.dataset.value;
+          group.querySelectorAll(".option-btn").forEach(b=>b.classList.remove("selected"));
+          btn.classList.add("selected");
+        });
+      });
+    });
+
     document.getElementById("modal-results-form").addEventListener("submit", onSubmitResultsForm);
     document.getElementById("modal-results-cancel").addEventListener("click", ()=>{
       document.getElementById("results-modal").classList.remove("show");
