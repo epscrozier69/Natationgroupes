@@ -202,6 +202,8 @@
   th[data-col="actions"]{background:var(--col-actions);}
   .badge-absent{background:#f97316;color:#fff;}
   .badge-dispense{background:#6366f1;color:#fff;}
+  .badge-fille{background:#ec4899;color:#fff;}
+  .badge-garcon{background:#3b82f6;color:#fff;}
   .stat-line.stat-absent{background:#fbbf24;}
   .stat-line.stat-dispense{background:#c4b5fd;}
   tr:hover td{background:#f8fafc;}
@@ -817,6 +819,11 @@
 
   // ===== Affichage commun (badges, tri) =====
 
+  function sexeBadge(sexe){
+    if(sexe === "Fille") return `<span class="badge badge-fille">F</span>`;
+    if(sexe === "Garçon") return `<span class="badge badge-garcon">G</span>`;
+    return sexe || "";
+  }
   function levelBadge(code){
     if(!code) return "";
     return `<span class="badge badge-${code}">${code}</span>`;
@@ -1163,7 +1170,7 @@
           <td>${i+1}</td>
           <td>${s.nom}</td>
           <td>${s.prenom}</td>
-          <td>${s.sexe}</td>
+          <td>${sexeBadge(s.sexe)}</td>
           <td>${levelBadge(s.entree)}</td>
           <td>${levelBadge(s.ventrale)}</td>
           <td>${levelBadge(s.dorsale)}</td>
@@ -1315,6 +1322,7 @@
         <div class="form-actions">
           <button type="submit" class="btn btn-add">Enregistrer les résultats</button>
           <button type="button" class="btn btn-cancel" id="modal-results-cancel">Annuler</button>
+          <button type="button" class="btn btn-danger" id="modal-results-clear" style="margin-left:auto;font-size:.8rem;padding:8px 12px;">Effacer résultats</button>
         </div>
       </form>`;
 
@@ -1332,6 +1340,12 @@
     document.getElementById("modal-results-form").addEventListener("submit", onSubmitResultsForm);
     document.getElementById("modal-results-cancel").addEventListener("click", ()=>{
       document.getElementById("results-modal").classList.remove("show");
+    });
+    document.getElementById("modal-results-clear").addEventListener("click", ()=>{
+      ["modal-entree","modal-ventrale","modal-dorsale","modal-immersion","modal-groupe","modal-statut"].forEach(id=>{
+        setOptionGroup(id, "");
+      });
+      document.getElementById("modal-commentaire").value = "";
     });
   }
 
