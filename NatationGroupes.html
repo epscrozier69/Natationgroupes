@@ -1296,7 +1296,6 @@
 
   function initResultsModal(){
     const card = document.getElementById("results-modal-card");
-    const STATUT_OPTS = [["","Présent(e)"],["Absent","Absent(e)"],["Dispensé","Dispensé(e)"]];
     card.innerHTML = `
       <div class="results-student-header">
         <div class="label">Saisie des résultats</div>
@@ -1307,8 +1306,8 @@
         ${buildOptionField("modal-ventrale","Nage ventrale (15m)",VENTRALE_OPTS)}
         ${buildOptionField("modal-dorsale","Nage dorsale (10m)",DORSALE_OPTS)}
         ${buildOptionField("modal-immersion","Immersion",IMMERSION_OPTS)}
-        ${buildOptionField("modal-groupe","Groupe",GROUPE_OPTS)}
-        ${buildOptionField("modal-statut","Statut",STATUT_OPTS)}
+        ${buildOptionField("modal-groupe","Groupe",[["Fort","Fort"],["Moyen","Moyen"],["Non nageur","Non nageur"]])}
+        ${buildOptionField("modal-statut","Statut",[["Absent","Absent"],["Dispensé","Dispensé"]])}
         <div class="option-field">
           <div class="option-label">Commentaires</div>
           <textarea id="modal-commentaire" rows="2" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:.95rem;box-sizing:border-box;"></textarea>
