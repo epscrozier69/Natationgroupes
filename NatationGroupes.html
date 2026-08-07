@@ -202,10 +202,12 @@
   th[data-col="actions"]{background:var(--col-actions);}
   .badge-absent{background:#f97316;color:#fff;}
   .badge-dispense{background:#6366f1;color:#fff;}
+  .badge-nonintegre{background:#334155;color:#fff;}
   .badge-fille{background:#ec4899;color:#fff;}
   .badge-garcon{background:#3b82f6;color:#fff;}
   .stat-line.stat-absent{background:#fbbf24;}
   .stat-line.stat-dispense{background:#c4b5fd;}
+  .stat-line.stat-nonintegre{background:#cbd5e1;}
   tr:hover td{background:#f8fafc;}
   .badge{
     display:inline-block;
@@ -280,6 +282,7 @@
   .option-btn[data-value=""].selected{background:#22c55e;border-color:#22c55e;color:#fff;}
   .option-btn[data-value="Absent"].selected{background:#f97316;border-color:#f97316;color:#fff;}
   .option-btn[data-value="Dispensé"].selected{background:#6366f1;border-color:#6366f1;color:#fff;}
+  .option-btn[data-value="Non intégré en EPS"].selected{background:#334155;border-color:#334155;color:#fff;}
   .results-modal-card{
     background:#fff;
     border-radius:var(--radius);
@@ -685,7 +688,7 @@
                 <select data-filter="classe"><option value="">Toutes</option>${CLASSES.map(c=>`<option value="${c}">${c}</option>`).join("")}</select>
               </th>
               <th>
-                <select data-filter="sexe"><option value="">Tous</option><option value="Fille">Fille</option><option value="Garçon">Garçon</option></select>
+                <select data-filter="sexe"><option value="">Tous</option><option value="Fille">F</option><option value="Garçon">G</option></select>
               </th>
               <th><select data-filter="entree">${filterOptionsHtml(ENTREE_OPTS,"Tous")}</select></th>
               <th><select data-filter="ventrale">${filterOptionsHtml(VENTRALE_OPTS,"Tous")}</select></th>
@@ -693,7 +696,7 @@
               <th><select data-filter="immersion">${filterOptionsHtml(IMMERSION_OPTS,"Tous")}</select></th>
               <th><select data-filter="groupe">${filterOptionsHtml(GROUPE_OPTS,"Tous")}</select></th>
               <th><input type="text" data-filter="commentaire" placeholder="Filtrer..."></th>
-              <th><select data-filter="statut"><option value="">Tous</option><option value="Absent">Absent</option><option value="Dispensé">Dispensé</option></select></th>
+              <th><select data-filter="statut"><option value="">Tous</option><option value="Absent">Absent</option><option value="Dispensé">Dispensé</option><option value="Non intégré en EPS">Non intégré</option></select></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -816,6 +819,7 @@
     if(!statut) return "";
     if(statut==="Absent") return `<span class="badge badge-absent">Absent</span>`;
     if(statut==="Dispensé") return `<span class="badge badge-dispense">Dispensé</span>`;
+    if(statut==="Non intégré en EPS") return `<span class="badge badge-nonintegre">Non intégré</span>`;
     return "";
   }
 
@@ -907,7 +911,7 @@
               <th><select data-filter="immersion">${filterOptionsHtml(IMMERSION_OPTS,"Tous")}</select></th>
               <th><select data-filter="groupe">${filterOptionsHtml(GROUPE_OPTS,"Tous")}</select></th>
               <th><input type="text" data-filter="commentaire" placeholder="Filtrer..."></th>
-              <th><select data-filter="statut"><option value="">Tous</option><option value="Absent">Absent</option><option value="Dispensé">Dispensé</option></select></th>
+              <th><select data-filter="statut"><option value="">Tous</option><option value="Absent">Absent</option><option value="Dispensé">Dispensé</option><option value="Non intégré en EPS">Non intégré</option></select></th>
               <th></th>
             </tr>
           </thead>
@@ -998,7 +1002,7 @@
     const inStatut = (st) => list.filter(s=>s.statut===st);
     const sexCount = (arr, sexe) => arr.filter(s=>s.sexe===sexe).length;
     const fortArr = inGroup("Fort"), moyenArr = inGroup("Moyen"), nonArr = inGroup("Non nageur");
-    const absentArr = inStatut("Absent"), dispenseArr = inStatut("Dispensé");
+    const absentArr = inStatut("Absent"), dispenseArr = inStatut("Dispensé"), nonIntegreArr = inStatut("Non intégré en EPS");
     return {
       total:list.length,
       filles:sexCount(list,"Fille"),
@@ -1017,7 +1021,10 @@
       absentGarcons:sexCount(absentArr,"Garçon"),
       dispense:dispenseArr.length,
       dispenseFilles:sexCount(dispenseArr,"Fille"),
-      dispenseGarcons:sexCount(dispenseArr,"Garçon")
+      dispenseGarcons:sexCount(dispenseArr,"Garçon"),
+      nonIntegre:nonIntegreArr.length,
+      nonIntegreFilles:sexCount(nonIntegreArr,"Fille"),
+      nonIntegreGarcons:sexCount(nonIntegreArr,"Garçon")
     };
   }
 
@@ -1030,27 +1037,31 @@
       <div class="stat-card">
         <h3>${title}</h3>
         <div class="stat-line">Nombre d'élèves <b>${st.total}</b></div>
-        <div class="stat-line">Filles <b>${st.filles}</b></div>
-        <div class="stat-line">Garçons <b>${st.garcons}</b></div>
+        <div class="stat-line">F <b>${st.filles}</b></div>
+        <div class="stat-line">G <b>${st.garcons}</b></div>
         <div class="stat-line stat-fort">
           <div class="stat-row">Groupe fort <b>${st.fort}</b></div>
-          <div class="stat-sub">Filles : ${st.fortFilles} — Garçons : ${st.fortGarcons}</div>
+          <div class="stat-sub">F : ${st.fortFilles} — G : ${st.fortGarcons}</div>
         </div>
         <div class="stat-line stat-moyen">
           <div class="stat-row">Groupe moyen <b>${st.moyen}</b></div>
-          <div class="stat-sub">Filles : ${st.moyenFilles} — Garçons : ${st.moyenGarcons}</div>
+          <div class="stat-sub">F : ${st.moyenFilles} — G : ${st.moyenGarcons}</div>
         </div>
         <div class="stat-line stat-non">
           <div class="stat-row">Groupe non nageur <b>${st.nonNageur}</b></div>
-          <div class="stat-sub">Filles : ${st.nonNageurFilles} — Garçons : ${st.nonNageurGarcons}</div>
+          <div class="stat-sub">F : ${st.nonNageurFilles} — G : ${st.nonNageurGarcons}</div>
         </div>
         <div class="stat-line stat-absent">
           <div class="stat-row">Absent(e)s <b>${st.absent}</b></div>
-          <div class="stat-sub">Filles : ${st.absentFilles} — Garçons : ${st.absentGarcons}</div>
+          <div class="stat-sub">F : ${st.absentFilles} — G : ${st.absentGarcons}</div>
         </div>
         <div class="stat-line stat-dispense">
           <div class="stat-row">Dispensé(e)s <b>${st.dispense}</b></div>
-          <div class="stat-sub">Filles : ${st.dispenseFilles} — Garçons : ${st.dispenseGarcons}</div>
+          <div class="stat-sub">F : ${st.dispenseFilles} — G : ${st.dispenseGarcons}</div>
+        </div>
+        <div class="stat-line stat-nonintegre">
+          <div class="stat-row">Non intégré(e)s EPS <b>${st.nonIntegre}</b></div>
+          <div class="stat-sub">F : ${st.nonIntegreFilles} — G : ${st.nonIntegreGarcons}</div>
         </div>
       </div>
     `;
@@ -1213,7 +1224,7 @@
         ${buildOptionField("modal-dorsale","Nage dorsale (10m)",DORSALE_OPTS)}
         ${buildOptionField("modal-immersion","Immersion",IMMERSION_OPTS)}
         ${buildOptionField("modal-groupe","Groupe",[["Fort","Fort"],["Moyen","Moyen"],["Non nageur","Non nageur"]])}
-        ${buildOptionField("modal-statut","Statut",[["Absent","Absent"],["Dispensé","Dispensé"]])}
+        ${buildOptionField("modal-statut","Statut",[["Absent","Absent"],["Dispensé","Dispensé"],["Non intégré en EPS","Non intégré EPS"]])}
         <div class="option-field">
           <div class="option-label">Commentaires</div>
           <textarea id="modal-commentaire" rows="1" style="width:100%;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:.85rem;box-sizing:border-box;"></textarea>
