@@ -860,7 +860,7 @@
         <td>${s.nom}</td>
         <td>${s.prenom}</td>
         <td>${s.classe}</td>
-        <td>${s.sexe}</td>
+        <td>${sexeBadge(s.sexe)}</td>
         <td>${levelBadge(s.entree)}</td>
         <td>${levelBadge(s.ventrale)}</td>
         <td>${levelBadge(s.dorsale)}</td>
@@ -1224,7 +1224,7 @@
         ${buildOptionField("modal-dorsale","Nage dorsale (10m)",DORSALE_OPTS)}
         ${buildOptionField("modal-immersion","Immersion",IMMERSION_OPTS)}
         ${buildOptionField("modal-groupe","Groupe",[["Fort","Fort"],["Moyen","Moyen"],["Non nageur","Non nageur"]])}
-        ${buildOptionField("modal-statut","Statut",[["Absent","Absent"],["Dispensé","Dispensé"],["Non intégré en EPS","Non intégré EPS"]])}
+        ${buildOptionField("modal-statut","Statut",[["Absent","Absent"],["Dispensé","Dispensé"],["Non intégré en EPS","Non intégré en EPS"]])}
         <div class="option-field">
           <div class="option-label">Commentaires</div>
           <textarea id="modal-commentaire" rows="1" style="width:100%;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:.85rem;box-sizing:border-box;"></textarea>
