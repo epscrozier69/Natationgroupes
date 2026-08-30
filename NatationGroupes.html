@@ -857,7 +857,8 @@
   function renderGeneralTable(){
     const tbody = document.querySelector("#table-general tbody");
     if(!tbody) return;
-    const list = sortedStudents(applyFilters(students, generalFilterState), generalSortState);
+    const sixiemes = students.filter(s => CLASSES.includes(s.classe));
+    const list = sortedStudents(applyFilters(sixiemes, generalFilterState), generalSortState);
     if(list.length===0){
       const msg = students.length===0 ? "Aucun élève. Importez la liste du collège pour commencer." : "Aucun élève ne correspond aux filtres.";
       tbody.innerHTML = `<tr><td colspan="12" class="empty-msg">${msg}</td></tr>`;
@@ -1125,7 +1126,8 @@
   function renderStats(){
     const el = document.getElementById("stats-global");
     const cards = CLASSES.map(c=>statCardHtml(c, classStats(c)));
-    el.innerHTML = statCardHtml("Toutes classes", computeStats(students)) + cards.join("");
+    const sixiemes = students.filter(s => CLASSES.includes(s.classe));
+    el.innerHTML = statCardHtml("Toutes classes", computeStats(sixiemes)) + cards.join("");
 
     document.getElementById("stats-groupes").innerHTML =
       statCardHtml("6ème1 + 6ème3", combinedStats(["6ème1","6ème3"]))
