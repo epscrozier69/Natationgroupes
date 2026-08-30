@@ -752,7 +752,16 @@
         alert("L'onglet source ne contient aucun élève, ou les colonnes n'ont pas été reconnues.\n\nVérifiez dans les paramètres (⚙) :\n• Le nom exact de l'onglet\n• L'URL du Google Sheet (si différent du sheet principal)");
         return;
       }
-      if(!confirm(collegeList.length + " élève(s) trouvé(s) dans le fichier source.\n\nCet import va remplacer la liste actuelle par cette liste.\nLes résultats d'évaluation déjà saisis seront conservés pour les élèves reconnus.\n\nContinuer ?")){
+      // Filtrer uniquement les élèves des classes 6ème1-6ème4
+      const sixiemes = collegeList.filter(r => CLASSES.includes(resolveClasse(r.classe)));
+      const exclus = collegeList.length - sixiemes.length;
+      if(sixiemes.length === 0){
+        setSyncStatus("Import : aucun élève de 6ème trouvé");
+        alert("Aucun élève de 6ème1 à 6ème4 trouvé dans le fichier source.\n\nVérifiez que la colonne Classe contient bien les valeurs 6ème1, 6ème2, 6ème3 ou 6ème4.");
+        return;
+      }
+      const exclusMsg = exclus > 0 ? `\n(${exclus} élève(s) d'autres niveaux ignorés)` : "";
+      if(!confirm(sixiemes.length + " élève(s) de 6ème trouvé(s)." + exclusMsg + "\n\nCet import va remplacer la liste actuelle par cette liste.\nLes résultats d'évaluation déjà saisis seront conservés pour les élèves reconnus.\n\nContinuer ?")){
         setSyncStatus("Import annulé");
         return;
       }
@@ -764,7 +773,7 @@
         existingByKey[k] = s;
       });
       const newList = [];
-      collegeList.forEach(r=>{
+      sixiemes.forEach(r=>{
         const classe = resolveClasse(r.classe);
         const k = (r.nom||"").trim().toLowerCase()+"|"+(r.prenom||"").trim().toLowerCase()+"|"+classe;
         const existing = existingByKey[k];
