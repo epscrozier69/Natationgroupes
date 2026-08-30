@@ -283,6 +283,12 @@
   .option-btn[data-value="Absent"].selected{background:#f97316;border-color:#f97316;color:#fff;}
   .option-btn[data-value="Dispensé"].selected{background:#6366f1;border-color:#6366f1;color:#fff;}
   .option-btn[data-value="Non intégré en EPS"].selected{background:#334155;border-color:#334155;color:#fff;}
+  .confirm-card{
+    background:#fff; border-radius:var(--radius); padding:24px 28px;
+    width:min(420px,92vw); box-shadow:0 8px 32px rgba(0,0,0,.18);
+  }
+  .confirm-card p{margin:0 0 20px;font-size:1rem;line-height:1.5;white-space:pre-line;}
+  .confirm-actions{display:flex;gap:12px;justify-content:flex-end;}
   .results-modal-card{
     background:#fff;
     border-radius:var(--radius);
@@ -412,6 +418,16 @@
 
 <div class="modal-overlay" id="results-modal">
   <div class="results-modal-card" id="results-modal-card"></div>
+</div>
+
+<div class="modal-overlay" id="confirm-modal">
+  <div class="confirm-card">
+    <p id="confirm-modal-msg"></p>
+    <div class="confirm-actions">
+      <button class="btn" id="confirm-modal-cancel">Annuler</button>
+      <button class="btn btn-add" id="confirm-modal-ok">Continuer</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -729,11 +745,31 @@
     });
   }
 
-  function deleteStudent(id){
+  async function deleteStudent(id){
     const s = students.find(x=>x.id===id);
     if(!s) return;
-    if(!confirm(`Supprimer ${s.prenom} ${s.nom} (${s.classe}) ?`)) return;
+    if(!await showConfirm(`Supprimer ${s.prenom} ${s.nom} (${s.classe}) ?`)) return;
     syncMutate(list => list.filter(x=>x.id!==id));
+  }
+
+  function showConfirm(msg){
+    return new Promise(resolve=>{
+      document.getElementById("confirm-modal-msg").textContent = msg;
+      const modal = document.getElementById("confirm-modal");
+      modal.classList.add("show");
+      const ok = document.getElementById("confirm-modal-ok");
+      const cancel = document.getElementById("confirm-modal-cancel");
+      function cleanup(result){
+        modal.classList.remove("show");
+        ok.removeEventListener("click", onOk);
+        cancel.removeEventListener("click", onCancel);
+        resolve(result);
+      }
+      function onOk(){ cleanup(true); }
+      function onCancel(){ cleanup(false); }
+      ok.addEventListener("click", onOk);
+      cancel.addEventListener("click", onCancel);
+    });
   }
 
   async function importCollegeList(){
@@ -761,7 +797,7 @@
         return;
       }
       const exclusMsg = exclus > 0 ? `\n(${exclus} élève(s) d'autres niveaux ignorés)` : "";
-      if(!confirm(sixiemes.length + " élève(s) de 6ème trouvé(s)." + exclusMsg + "\n\nCet import va remplacer la liste actuelle par cette liste.\nLes résultats d'évaluation déjà saisis seront conservés pour les élèves reconnus.\n\nContinuer ?")){
+      if(!await showConfirm(sixiemes.length + " élève(s) de 6ème trouvé(s)." + exclusMsg + "\n\nCet import va remplacer la liste actuelle.\nLes résultats déjà saisis seront conservés.\n\nContinuer ?")){
         setSyncStatus("Import annulé");
         return;
       }
