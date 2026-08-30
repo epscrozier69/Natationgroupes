@@ -545,12 +545,20 @@
   }
   async function fetchCollegeList(){
     if(!isValidWebAppUrl()) throw new Error("no-url");
-    let url = settings.webAppUrl + "?action=getCollegeList";
-    const res = await fetch(url, { credentials:"omit" });
-    if(!res.ok) throw new Error("Erreur HTTP " + res.status);
-    const data = await res.json();
-    if(data && data.error) throw new Error(data.error);
-    return data;
+    const OPTS = { method:"GET", credentials:"omit", mode:"cors", cache:"no-store", redirect:"follow" };
+    let lastErr;
+    for(let attempt = 0; attempt < 3; attempt++){
+      try{
+        if(attempt > 0) await new Promise(r => setTimeout(r, 1500 * attempt));
+        const url = settings.webAppUrl + "?action=getCollegeList&t=" + Date.now();
+        const res = await fetch(url, OPTS);
+        if(!res.ok) throw new Error("Erreur HTTP " + res.status);
+        const data = await res.json();
+        if(data && data.error) throw new Error(data.error);
+        return data;
+      }catch(e){ lastErr = e; }
+    }
+    throw lastErr;
   }
 
   let _syncChain = Promise.resolve();
@@ -778,7 +786,7 @@
       return;
     }
     try{
-      setSyncStatus("Import en cours...");
+      setSyncStatus("Import en cours… (peut prendre 10-20 s)");
       const collegeList = await fetchCollegeList();
       if(!Array.isArray(collegeList)){
         throw new Error("Réponse inattendue du serveur");
@@ -837,7 +845,12 @@
       setSyncStatus("Import terminé ✓ — " + added + " ajouté(s), " + conserves + " conservé(s) avec résultats");
     }catch(e){
       setSyncStatus("Erreur d'import");
-      alert("Erreur lors de l'import :\n" + e.message + "\n\nVérifiez les paramètres (⚙) et la connexion internet.");
+      const isNetErr = /load failed|failed to fetch|network/i.test(e.message);
+      if(isNetErr){
+        alert("L'iPad ne parvient pas à joindre Google Apps Script.\n\nAssurez-vous que :\n• L'iPad est connecté à internet\n• L'URL du Web App est configurée dans ⚙\n• Le déploiement Apps Script autorise « Tous les utilisateurs »\n\nErreur : " + e.message);
+      } else {
+        alert("Erreur lors de l'import :\n" + e.message + "\n\nVérifiez les paramètres (⚙) et la connexion internet.");
+      }
     }
   }
 
