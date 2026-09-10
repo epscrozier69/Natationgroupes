@@ -345,32 +345,29 @@
   .sp-dispense{background:#a78bfa;color:#fff;}
   .sp-nonintegre{background:#64748b;color:#fff;}
 
-  /* Listes élèves par groupe */
-  .groupes-creneau{margin-top:28px;}
-  .groupes-creneau-title{
-    font-size:1.05rem;font-weight:800;color:#1e3a8a;
-    border-bottom:3px solid #2563eb;padding-bottom:6px;margin-bottom:14px;
+  /* Listes élèves par groupe (intégrées dans la stat-card) */
+  .gc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:10px;border-top:2px solid #e2e8f0;padding-top:10px;}
+  .gc-col{border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;}
+  .gc-header{
+    padding:7px 10px;display:flex;flex-direction:column;gap:1px;
   }
-  .groupes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
-  .groupe-block{border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
-  .groupe-block-header{
-    padding:9px 14px;display:flex;justify-content:space-between;align-items:center;
-  }
-  .groupe-block-header .gb-title{font-size:.85rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;}
-  .groupe-block-header .gb-prof{font-size:.78rem;font-weight:600;opacity:.9;}
-  .groupe-block-header .gb-count{font-size:1.1rem;font-weight:800;margin-left:8px;}
-  .gb-fort .groupe-block-header{background:#3b82f6;color:#fff;}
-  .gb-moyen .groupe-block-header{background:#fb923c;color:#fff;}
-  .gb-non .groupe-block-header{background:#ef4444;color:#fff;}
-  .groupe-block-body{background:var(--card);padding:6px 0;}
-  .groupe-eleve{
+  .gc-header .gc-title{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;}
+  .gc-header .gc-prof{font-size:.68rem;font-weight:600;opacity:.9;}
+  .gc-header .gc-count{font-size:1rem;font-weight:800;margin-top:2px;}
+  .gc-fort .gc-header{background:#3b82f6;color:#fff;}
+  .gc-moyen .gc-header{background:#fb923c;color:#fff;}
+  .gc-non .gc-header{background:#ef4444;color:#fff;}
+  .gc-body{background:var(--card);}
+  .gc-eleve{
     display:flex;justify-content:space-between;align-items:center;
-    padding:5px 14px;font-size:.82rem;border-bottom:1px solid #f1f5f9;
+    padding:4px 8px;font-size:.78rem;border-bottom:1px solid #f1f5f9;
   }
-  .groupe-eleve:last-child{border-bottom:none;}
-  .groupe-eleve .ge-name{font-weight:600;color:#0f172a;}
-  .groupe-eleve .ge-classe{font-size:.75rem;color:#64748b;background:#f1f5f9;border-radius:4px;padding:1px 6px;}
-  .groupe-eleve-empty{padding:10px 14px;font-size:.82rem;color:#94a3b8;font-style:italic;}
+  .gc-eleve:last-child{border-bottom:none;}
+  .gc-eleve .ge-name{font-weight:600;color:#0f172a;}
+  .gc-eleve .ge-classe{font-size:.7rem;color:#64748b;background:#f1f5f9;border-radius:4px;padding:1px 5px;white-space:nowrap;}
+  .gc-empty{padding:8px;font-size:.78rem;color:#94a3b8;font-style:italic;text-align:center;}
+  .gc-export-row{display:flex;gap:8px;margin:10px 0 6px;flex-wrap:wrap;}
+  .gc-export-row .btn{font-size:.78rem;padding:6px 14px;}
 
   .modal-overlay{
     display:none;
@@ -1193,52 +1190,108 @@
       <div class="stats-grid" id="stats-global"></div>
       <h3 style="margin:24px 0 12px;color:#1e3a8a;">Statistiques regroupées</h3>
       <div class="stats-grid" id="stats-groupes"></div>
-      <div id="listes-groupes"></div>
     `;
   }
   function combinedStats(classesArr){
     return computeStats(students.filter(s=>classesArr.includes(s.classe)));
   }
 
-  function groupeBlockHtml(cssClass, label, prof, list){
-    const rows = list.length === 0
-      ? `<div class="groupe-eleve-empty">Aucun élève</div>`
-      : list.map(s=>`
-          <div class="groupe-eleve">
-            <span class="ge-name">${s.nom} ${s.prenom}</span>
-            <span class="ge-classe">${s.classe}</span>
-          </div>`).join("");
-    return `
-      <div class="groupe-block ${cssClass}">
-        <div class="groupe-block-header">
-          <div>
-            <div class="gb-title">${label}</div>
-            <div class="gb-prof">${prof}</div>
-          </div>
-          <span class="gb-count">${list.length}</span>
+  function _groupeEleves(classes, groupe){
+    const byAlpha = (a,b)=>{ const nc=a.classe.localeCompare(b.classe); return nc!==0?nc:a.nom.localeCompare(b.nom)||a.prenom.localeCompare(b.prenom); };
+    return students.filter(s=>classes.includes(s.classe)&&s.groupe===groupe).sort(byAlpha);
+  }
+
+  function creneauFullCardHtml(title, classes, profFort, profMoyen, profNon){
+    const st = combinedStats(classes);
+    const forts  = _groupeEleves(classes,"Fort");
+    const moyens = _groupeEleves(classes,"Moyen");
+    const nons   = _groupeEleves(classes,"Non nageur");
+    const elRows = list => list.length===0
+      ? `<div class="gc-empty">Aucun élève</div>`
+      : list.map(s=>`<div class="gc-eleve"><span class="ge-name">${s.nom} ${s.prenom}</span><span class="ge-classe">${s.classe}</span></div>`).join("");
+    const gcol = (css,lbl,prof,cnt,list)=>`
+      <div class="gc-col ${css}">
+        <div class="gc-header">
+          <div class="gc-title">${lbl}</div>
+          <div class="gc-prof">${prof}</div>
+          <div class="gc-count">${cnt}</div>
         </div>
-        <div class="groupe-block-body">${rows}</div>
+        <div class="gc-body">${elRows(list)}</div>
+      </div>`;
+    const cp = JSON.stringify(classes).replace(/"/g,"&quot;");
+    return `
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <h3>${title}</h3>
+          <span class="stat-card-total">${st.total}<small>élèves</small></span>
+        </div>
+        <div class="stat-gender-row">
+          <span class="stat-gender-pill sgp-f">F &nbsp;<b>${st.filles}</b></span>
+          <span class="stat-gender-pill sgp-g">G &nbsp;<b>${st.garcons}</b></span>
+        </div>
+        <div class="stat-pills">
+          ${sp("sp-fort","Fort",st.fort,st.fortFilles,st.fortGarcons)}
+          ${sp("sp-moyen","Moyen",st.moyen,st.moyenFilles,st.moyenGarcons)}
+          ${sp("sp-non","Non nag.",st.nonNageur,st.nonNageurFilles,st.nonNageurGarcons)}
+          ${sp("sp-absent","Absent",st.absent,st.absentFilles,st.absentGarcons)}
+          ${sp("sp-dispense","Dispensé",st.dispense,st.dispenseFilles,st.dispenseGarcons)}
+          ${sp("sp-nonintegre","Non intég.",st.nonIntegre,st.nonIntegreFilles,st.nonIntegreGarcons)}
+        </div>
+        <div class="gc-export-row">
+          <button class="btn btn-export" onclick="exportGroupesExcel('${title}','${cp}','${profFort}','${profMoyen}','${profNon}')">⬇ Excel</button>
+          <button class="btn" style="background:#6366f1;color:#fff;" onclick="exportGroupesPDF('${title}','${cp}','${profFort}','${profMoyen}','${profNon}')">🖨 PDF</button>
+        </div>
+        <div class="gc-grid">
+          ${gcol("gc-fort","Groupe Fort",profFort,forts.length,forts)}
+          ${gcol("gc-moyen","Groupe Moyen",profMoyen,moyens.length,moyens)}
+          ${gcol("gc-non","Non nageurs",profNon,nons.length,nons)}
+        </div>
       </div>`;
   }
 
-  function creneauListHtml(title, classes, profFort, profMoyen, profNon){
-    const inClasses = students.filter(s => classes.includes(s.classe));
-    const byAlpha = (a,b) => {
-      const nc = a.classe.localeCompare(b.classe);
-      return nc !== 0 ? nc : a.nom.localeCompare(b.nom) || a.prenom.localeCompare(b.prenom);
-    };
-    const forts  = inClasses.filter(s=>s.groupe==="Fort").sort(byAlpha);
-    const moyens = inClasses.filter(s=>s.groupe==="Moyen").sort(byAlpha);
-    const nons   = inClasses.filter(s=>s.groupe==="Non nageur").sort(byAlpha);
-    return `
-      <div class="groupes-creneau">
-        <div class="groupes-creneau-title">${title}</div>
-        <div class="groupes-grid">
-          ${groupeBlockHtml("gb-fort",  "Groupe fort",      profFort,  forts)}
-          ${groupeBlockHtml("gb-moyen", "Groupe moyen",     profMoyen, moyens)}
-          ${groupeBlockHtml("gb-non",   "Non nageurs",      profNon,   nons)}
+  function exportGroupesExcel(title, classesJson, profFort, profMoyen, profNon){
+    if(typeof XLSX==="undefined"){ alert("Bibliothèque d'export indisponible (connexion internet requise)."); return; }
+    const classes = JSON.parse(classesJson.replace(/&quot;/g,'"'));
+    const forts  = _groupeEleves(classes,"Fort");
+    const moyens = _groupeEleves(classes,"Moyen");
+    const nons   = _groupeEleves(classes,"Non nageur");
+    const toRows = (list,prof) => list.map((s,i)=>({"N°":i+1,"Nom":s.nom,"Prénom":s.prenom,"Classe":s.classe,"Sexe":s.sexe,"Professeur":prof}));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(forts,profFort)),  "Groupe Fort");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(moyens,profMoyen)),"Groupe Moyen");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(nons,profNon)),    "Non Nageurs");
+    XLSX.writeFile(wb, `Groupes_Natation_${title.replace(/[^a-zA-Z0-9]+/g,"_")}_2026-2027.xlsx`);
+  }
+
+  function exportGroupesPDF(title, classesJson, profFort, profMoyen, profNon){
+    const classes = JSON.parse(classesJson.replace(/&quot;/g,'"'));
+    const forts  = _groupeEleves(classes,"Fort");
+    const moyens = _groupeEleves(classes,"Moyen");
+    const nons   = _groupeEleves(classes,"Non nageur");
+    const tbl = (list,prof,color,label) => {
+      const rows = list.length===0
+        ? `<tr><td colspan="4" style="color:#94a3b8;font-style:italic;padding:8px">Aucun élève</td></tr>`
+        : list.map((s,i)=>`<tr><td>${i+1}</td><td><b>${s.nom}</b></td><td>${s.prenom}</td><td>${s.classe}</td></tr>`).join("");
+      return `<div style="break-inside:avoid;margin-bottom:20px;">
+        <div style="background:${color};color:#fff;padding:10px 14px;border-radius:8px 8px 0 0;">
+          <b style="font-size:13px;text-transform:uppercase">${label}</b>
+          <span style="float:right;font-size:13px">${prof} — ${list.length} élève(s)</span>
         </div>
-      </div>`;
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="background:#f8fafc;"><th style="padding:5px 10px;text-align:left;width:28px">N°</th><th style="padding:5px 10px;text-align:left">Nom</th><th style="padding:5px 10px;text-align:left">Prénom</th><th style="padding:5px 10px;text-align:left">Classe</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>`;
+    };
+    const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Groupes Natation — ${title}</title>
+      <style>body{font-family:sans-serif;margin:20px;color:#0f172a;}h1{font-size:15px;color:#1e3a8a;border-bottom:2px solid #2563eb;padding-bottom:6px;margin-bottom:16px;}td,th{border-bottom:1px solid #e2e8f0;}@media print{body{margin:0;}@page{margin:12mm;}}</style>
+    </head><body>
+      <h1>EPS — Groupes de Natation 2026-2027 &nbsp;|&nbsp; ${title}</h1>
+      ${tbl(forts, profFort,"#3b82f6","Groupe Fort")}
+      ${tbl(moyens,profMoyen,"#fb923c","Groupe Moyen")}
+      ${tbl(nons,  profNon,  "#ef4444","Non Nageurs")}
+      <script>window.onload=()=>{window.print();}<\/script>
+    </body></html>`;
+    const w=window.open("","_blank"); if(w){w.document.write(html);w.document.close();}
   }
 
   function renderStats(){
@@ -1248,12 +1301,8 @@
     el.innerHTML = statCardHtml("Toutes classes", computeStats(sixiemes)) + cards.join("");
 
     document.getElementById("stats-groupes").innerHTML =
-      statCardHtml("LUNDI — 6ème1 + 6ème2", combinedStats(["6ème1","6ème2"]))
-      + statCardHtml("VENDREDI — 6ème3 + 6ème4", combinedStats(["6ème3","6ème4"]));
-
-    document.getElementById("listes-groupes").innerHTML =
-      creneauListHtml("LUNDI — 6ème1 + 6ème2",   ["6ème1","6ème2"], "Mme JOUD", "Mme MEKRALDI",     "Mme CROZIER")
-    + creneauListHtml("VENDREDI — 6ème3 + 6ème4", ["6ème3","6ème4"], "Mme JOUD", "M. GOUTTE-TOQUET", "Mme CROZIER");
+      creneauFullCardHtml("LUNDI — 6ème1 + 6ème2",   ["6ème1","6ème2"], "Mme JOUD", "Mme MEKRALDI",     "Mme CROZIER")
+    + creneauFullCardHtml("VENDREDI — 6ème3 + 6ème4", ["6ème3","6ème4"], "Mme JOUD", "M. GOUTTE-TOQUET", "Mme CROZIER");
   }
 
   function renderAll(){
