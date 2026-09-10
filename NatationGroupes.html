@@ -1459,6 +1459,10 @@
   }
 
   document.addEventListener("DOMContentLoaded", init);
+
+  // Exposer au global pour les onclick inline
+  window.exportGroupesExcel = exportGroupesExcel;
+  window.exportGroupesPDF   = exportGroupesPDF;
 })();
 </script>
 </body>
