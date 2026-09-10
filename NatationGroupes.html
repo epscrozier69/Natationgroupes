@@ -1188,7 +1188,13 @@
   function buildStatsTab(){
     document.getElementById("tab-stats").innerHTML = `
       <div class="stats-grid" id="stats-global"></div>
-      <h3 style="margin:24px 0 12px;color:#1e3a8a;">Statistiques regroupées</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:24px 0 12px;">
+        <h3 style="margin:0;color:#1e3a8a;">Statistiques regroupées</h3>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-export" onclick="exportTousGroupesExcel()" style="font-size:.8rem;padding:7px 14px;">⬇ Excel — Lundi + Vendredi</button>
+          <button class="btn" style="background:#6366f1;color:#fff;font-size:.8rem;padding:7px 14px;" onclick="exportTousGroupesPDF()">🖨 PDF — Lundi + Vendredi</button>
+        </div>
+      </div>
       <div class="stats-grid" id="stats-groupes"></div>
     `;
   }
@@ -1297,7 +1303,7 @@
 
     const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Groupes Natation — ${title}</title>
       <style>
-        *{box-sizing:border-box;}
+        *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
         body{font-family:system-ui,sans-serif;margin:16px;color:#0f172a;background:#fff;}
         @media print{body{margin:0;}@page{margin:10mm;size:A4 landscape;}}
       </style>
@@ -1503,9 +1509,88 @@
 
   document.addEventListener("DOMContentLoaded", init);
 
+  const CRENEAUX = [
+    { title:"LUNDI — 6ème1 + 6ème2",   classes:["6ème1","6ème2"], profFort:"Mme JOUD", profMoyen:"Mme MEKRALDI",     profNon:"Mme CROZIER" },
+    { title:"VENDREDI — 6ème3 + 6ème4", classes:["6ème3","6ème4"], profFort:"Mme JOUD", profMoyen:"M. GOUTTE-TOQUET", profNon:"Mme CROZIER" }
+  ];
+
+  function exportTousGroupesExcel(){
+    if(typeof XLSX==="undefined"){ alert("Bibliothèque d'export indisponible (connexion internet requise)."); return; }
+    const wb = XLSX.utils.book_new();
+    CRENEAUX.forEach(cr=>{
+      const toRows = (list,prof) => list.map((s,i)=>({"N°":i+1,"Nom":s.nom,"Prénom":s.prenom,"Classe":s.classe,"Sexe":s.sexe,"Professeur":prof}));
+      const label = cr.title.split("—")[0].trim(); // "LUNDI" ou "VENDREDI"
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(_groupeEleves(cr.classes,"Fort"),       cr.profFort)),  `${label} - Fort`);
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(_groupeEleves(cr.classes,"Moyen"),      cr.profMoyen)), `${label} - Moyen`);
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(_groupeEleves(cr.classes,"Non nageur"), cr.profNon)),   `${label} - Non Nageurs`);
+    });
+    XLSX.writeFile(wb, "Groupes_Natation_2026-2027.xlsx");
+  }
+
+  function exportTousGroupesPDF(){
+    const creneauSection = (cr) => {
+      const st = combinedStats(cr.classes);
+      const forts  = _groupeEleves(cr.classes,"Fort");
+      const moyens = _groupeEleves(cr.classes,"Moyen");
+      const nons   = _groupeEleves(cr.classes,"Non nageur");
+      const pill = (color,label,count,f,g) =>
+        `<div style="background:${color};color:#fff;border-radius:8px;padding:7px 5px;text-align:center;">
+          <div style="font-size:9px;font-weight:800;text-transform:uppercase;">${label}</div>
+          <div style="font-size:18px;font-weight:800;line-height:1.1;">${count}</div>
+          <div style="font-size:8px;margin-top:2px;opacity:.9;">F:${f} · G:${g}</div>
+        </div>`;
+      const col = (color,label,prof,list) => {
+        const rows = list.length===0
+          ? `<div style="padding:8px;font-size:10px;color:#94a3b8;font-style:italic;">Aucun élève</div>`
+          : list.map((s,i)=>`<div style="display:flex;justify-content:space-between;padding:4px 8px;border-bottom:1px solid #f1f5f9;font-size:10px;"><span><b>${s.nom}</b> ${s.prenom}</span><span style="background:#f1f5f9;border-radius:3px;padding:1px 5px;color:#64748b;font-size:9px;">${s.classe}</span></div>`).join("");
+        return `<div style="border-radius:7px;overflow:hidden;border:1px solid #e2e8f0;">
+          <div style="background:${color};color:#fff;padding:8px 10px;">
+            <div style="font-size:10px;font-weight:800;text-transform:uppercase;">${label}</div>
+            <div style="font-size:9px;opacity:.9;">${prof}</div>
+            <div style="font-size:16px;font-weight:800;">${list.length}</div>
+          </div><div>${rows}</div></div>`;
+      };
+      return `
+        <div style="break-before:${cr===CRENEAUX[0]?'auto':'page'};">
+          <div style="background:linear-gradient(135deg,#1e3a8a,#4f46e5);color:#fff;padding:12px 16px;border-radius:9px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:11px;opacity:.8;">EPS — Groupes de Natation 2026-2027</div>
+              <div style="font-size:16px;font-weight:800;margin-top:2px;">${cr.title}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:28px;font-weight:800;line-height:1;">${st.total}</div>
+              <div style="font-size:10px;opacity:.8;">élèves &nbsp; F ${st.filles} · G ${st.garcons}</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px;">
+            ${pill("#3b82f6","Fort",        st.fort,        st.fortFilles,       st.fortGarcons)}
+            ${pill("#fb923c","Moyen",       st.moyen,       st.moyenFilles,      st.moyenGarcons)}
+            ${pill("#ef4444","Non Nageur",  st.nonNageur,   st.nonNageurFilles,  st.nonNageurGarcons)}
+            ${pill("#d97706","Absent",      st.absent,      st.absentFilles,     st.absentGarcons)}
+            ${pill("#7c3aed","Dispensé",    st.dispense,    st.dispenseFilles,   st.dispenseGarcons)}
+            ${pill("#475569","Non intégré", st.nonIntegre,  st.nonIntegreFilles, st.nonIntegreGarcons)}
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;">
+            ${col("#3b82f6","Groupe Fort",  cr.profFort,  forts)}
+            ${col("#fb923c","Groupe Moyen", cr.profMoyen, moyens)}
+            ${col("#ef4444","Non Nageurs",  cr.profNon,   nons)}
+          </div>
+        </div>`;
+    };
+    const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Groupes Natation 2026-2027</title>
+      <style>*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}body{font-family:system-ui,sans-serif;margin:14px;color:#0f172a;}@media print{body{margin:0;}@page{margin:10mm;size:A4 landscape;}}</style>
+    </head><body>
+      ${CRENEAUX.map(cr=>creneauSection(cr)).join("")}
+      <script>window.onload=()=>{window.print();}<\/script>
+    </body></html>`;
+    const w=window.open("","_blank"); if(w){w.document.write(html);w.document.close();}
+  }
+
   // Exposer au global pour les onclick inline
-  window.exportGroupesExcel = exportGroupesExcel;
-  window.exportGroupesPDF   = exportGroupesPDF;
+  window.exportGroupesExcel    = exportGroupesExcel;
+  window.exportGroupesPDF      = exportGroupesPDF;
+  window.exportTousGroupesExcel = exportTousGroupesExcel;
+  window.exportTousGroupesPDF   = exportTousGroupesPDF;
 })();
 </script>
 </body>
