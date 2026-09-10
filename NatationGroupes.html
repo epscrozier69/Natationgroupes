@@ -108,7 +108,7 @@
   }
   .btn-add{background:#2563eb;}
   .btn-import{background:#7c3aed;margin-left:auto;}
-  .btn-export{background:#ca8a04;}
+  .btn-export{background:#94a3b8;}
   .btn-cancel{background:#64748b;}
   .btn-danger{background:#dc2626;}
   .btn-sync{background:#0891b2;}
@@ -200,7 +200,7 @@
   th[data-col="commentaire"]{background:var(--col-commentaire);}
   th[data-col="statut"]{background:var(--col-statut);}
   th[data-col="actions"]{background:var(--col-actions);}
-  .badge-absent{background:#fdba74;color:#7c2d12;}
+  .badge-absent{background:#cbd5e1;color:#334155;}
   .badge-dispense{background:#6366f1;color:#fff;}
   .badge-nonintegre{background:#334155;color:#fff;}
   .badge-fille{background:#ec4899;color:#fff;}
@@ -277,7 +277,7 @@
   .option-btn[data-value="Moyen"].selected{background:#f97316;border-color:#f97316;color:#fff;}
   .option-btn[data-value="Non nageur"].selected{background:#dc2626;border-color:#dc2626;color:#fff;}
   .option-btn[data-value=""].selected{background:#22c55e;border-color:#22c55e;color:#fff;}
-  .option-btn[data-value="Absent"].selected{background:#fdba74;border-color:#fdba74;color:#7c2d12;}
+  .option-btn[data-value="Absent"].selected{background:#cbd5e1;border-color:#94a3b8;color:#334155;}
   .option-btn[data-value="Dispensé"].selected{background:#6366f1;border-color:#6366f1;color:#fff;}
   .option-btn[data-value="Non intégré en EPS"].selected{background:#334155;border-color:#334155;color:#fff;}
   .confirm-card{
@@ -341,7 +341,7 @@
   .sp-fort{background:#3b82f6;color:#fff;}
   .sp-moyen{background:#fb923c;color:#fff;}
   .sp-non{background:#ef4444;color:#fff;}
-  .sp-absent{background:#fdba74;color:#7c2d12;}
+  .sp-absent{background:#cbd5e1;color:#334155;}
   .sp-dispense{background:#7c3aed;color:#fff;}
   .sp-nonintegre{background:#475569;color:#fff;}
 
@@ -1255,18 +1255,50 @@
       </div>`;
   }
 
+  function _buildCreneauSheet(title, forts, moyens, nons, profFort, profMoyen, profNon){
+    const H = ["N°","Nom","Prénom","Classe","Sexe"];
+    const maxLen = Math.max(forts.length, moyens.length, nons.length, 1);
+    const aoa = [];
+    // Ligne titre
+    aoa.push([`EPS — Groupes de Natation 2026-2027 | ${title}`]);
+    aoa.push([]);
+    // Ligne en-têtes de groupe
+    aoa.push([`GROUPE FORT — ${profFort}`,"","","","", "", `GROUPE MOYEN — ${profMoyen}`,"","","","", "", `NON NAGEURS — ${profNon}`]);
+    // Ligne en-têtes de colonnes
+    aoa.push([...H,"", "",...H,"", "",...H]);
+    // Lignes données (côte à côte)
+    for(let i=0;i<maxLen;i++){
+      const f=forts[i], m=moyens[i], n=nons[i];
+      aoa.push([
+        f?i+1:"", f?f.nom:"", f?f.prenom:"", f?f.classe:"", f?f.sexe:"", "",  "",
+        m?i+1:"", m?m.nom:"", m?m.prenom:"", m?m.classe:"", m?m.sexe:"", "",  "",
+        n?i+1:"", n?n.nom:"", n?n.prenom:"", n?n.classe:"", n?n.sexe:""
+      ]);
+    }
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    // Largeurs de colonnes
+    ws["!cols"] = [
+      {wch:4},{wch:18},{wch:14},{wch:8},{wch:6},{wch:2},{wch:2},
+      {wch:4},{wch:18},{wch:14},{wch:8},{wch:6},{wch:2},{wch:2},
+      {wch:4},{wch:18},{wch:14},{wch:8},{wch:6}
+    ];
+    return ws;
+  }
+
   function exportGroupesExcel(title, classesJson, profFort, profMoyen, profNon){
     if(typeof XLSX==="undefined"){ alert("Bibliothèque d'export indisponible (connexion internet requise)."); return; }
     const classes = JSON.parse(classesJson.replace(/&quot;/g,'"'));
-    const forts  = _groupeEleves(classes,"Fort");
-    const moyens = _groupeEleves(classes,"Moyen");
-    const nons   = _groupeEleves(classes,"Non nageur");
-    const toRows = (list,prof) => list.map((s,i)=>({"N°":i+1,"Nom":s.nom,"Prénom":s.prenom,"Classe":s.classe,"Sexe":s.sexe,"Professeur":prof}));
+    const ws = _buildCreneauSheet(
+      title,
+      _groupeEleves(classes,"Fort"),
+      _groupeEleves(classes,"Moyen"),
+      _groupeEleves(classes,"Non nageur"),
+      profFort, profMoyen, profNon
+    );
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(forts,profFort)),  "Groupe Fort");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(moyens,profMoyen)),"Groupe Moyen");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(nons,profNon)),    "Non Nageurs");
-    XLSX.writeFile(wb, `Groupes_Natation_${title.replace(/[^a-zA-Z0-9]+/g,"_")}_2026-2027.xlsx`);
+    const label = title.includes("LUNDI") ? "LUNDI" : "VENDREDI";
+    XLSX.utils.book_append_sheet(wb, ws, label);
+    XLSX.writeFile(wb, `Groupes_${label}_2026-2027.xlsx`);
   }
 
   function exportGroupesPDF(title, classesJson, profFort, profMoyen, profNon){
@@ -1328,7 +1360,7 @@
         ${pill("#3b82f6","Fort",        st.fort,        st.fortFilles,        st.fortGarcons)}
         ${pill("#fb923c","Moyen",       st.moyen,       st.moyenFilles,       st.moyenGarcons)}
         ${pill("#ef4444","Non Nageur",  st.nonNageur,   st.nonNageurFilles,   st.nonNageurGarcons)}
-        ${pill("#fdba74","Absent",      st.absent,      st.absentFilles,      st.absentGarcons)}
+        ${pill("#94a3b8","Absent",      st.absent,      st.absentFilles,      st.absentGarcons)}
         ${pill("#7c3aed","Dispensé",    st.dispense,    st.dispenseFilles,    st.dispenseGarcons)}
         ${pill("#475569","Non intégré", st.nonIntegre,  st.nonIntegreFilles,  st.nonIntegreGarcons)}
       </div>
@@ -1518,11 +1550,15 @@
     if(typeof XLSX==="undefined"){ alert("Bibliothèque d'export indisponible (connexion internet requise)."); return; }
     const wb = XLSX.utils.book_new();
     CRENEAUX.forEach(cr=>{
-      const toRows = (list,prof) => list.map((s,i)=>({"N°":i+1,"Nom":s.nom,"Prénom":s.prenom,"Classe":s.classe,"Sexe":s.sexe,"Professeur":prof}));
-      const label = cr.title.split("—")[0].trim(); // "LUNDI" ou "VENDREDI"
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(_groupeEleves(cr.classes,"Fort"),       cr.profFort)),  `${label} - Fort`);
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(_groupeEleves(cr.classes,"Moyen"),      cr.profMoyen)), `${label} - Moyen`);
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(_groupeEleves(cr.classes,"Non nageur"), cr.profNon)),   `${label} - Non Nageurs`);
+      const label = cr.title.split("—")[0].trim();
+      const ws = _buildCreneauSheet(
+        cr.title,
+        _groupeEleves(cr.classes,"Fort"),
+        _groupeEleves(cr.classes,"Moyen"),
+        _groupeEleves(cr.classes,"Non nageur"),
+        cr.profFort, cr.profMoyen, cr.profNon
+      );
+      XLSX.utils.book_append_sheet(wb, ws, label);
     });
     XLSX.writeFile(wb, "Groupes_Natation_2026-2027.xlsx");
   }
@@ -1566,7 +1602,7 @@
             ${pill("#3b82f6","Fort",        st.fort,        st.fortFilles,       st.fortGarcons)}
             ${pill("#fb923c","Moyen",       st.moyen,       st.moyenFilles,      st.moyenGarcons)}
             ${pill("#ef4444","Non Nageur",  st.nonNageur,   st.nonNageurFilles,  st.nonNageurGarcons)}
-            ${pill("#fdba74","Absent",      st.absent,      st.absentFilles,     st.absentGarcons)}
+            ${pill("#94a3b8","Absent",      st.absent,      st.absentFilles,     st.absentGarcons)}
             ${pill("#7c3aed","Dispensé",    st.dispense,    st.dispenseFilles,   st.dispenseGarcons)}
             ${pill("#475569","Non intégré", st.nonIntegre,  st.nonIntegreFilles, st.nonIntegreGarcons)}
           </div>
