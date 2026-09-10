@@ -335,9 +335,9 @@
   .stat-pill{
     border-radius:9px;padding:7px 5px 5px;text-align:center;
   }
-  .sp-label{font-size:.62rem;font-weight:700;line-height:1;margin-bottom:3px;opacity:.9;}
-  .sp-count{font-size:1.25rem;font-weight:800;line-height:1;}
-  .sp-fg{font-size:.6rem;margin-top:2px;opacity:.8;white-space:nowrap;}
+  .sp-label{font-size:.75rem;font-weight:800;line-height:1;margin-bottom:4px;opacity:.95;text-transform:uppercase;letter-spacing:.04em;}
+  .sp-count{font-size:1.5rem;font-weight:800;line-height:1;}
+  .sp-fg{font-size:.7rem;margin-top:4px;opacity:.9;}
   .sp-fort{background:#3b82f6;color:#fff;}
   .sp-moyen{background:#fb923c;color:#fff;}
   .sp-non{background:#ef4444;color:#fff;}
@@ -1099,7 +1099,7 @@
     return `<div class="stat-pill ${cls}">
       <div class="sp-label">${label}</div>
       <div class="sp-count">${count}</div>
-      <div class="sp-fg">F:${f} · G:${g}</div>
+      <div class="sp-fg">Filles : ${f} · Garçons : ${g}</div>
     </div>`;
   }
   function statCardHtml(title, st){
