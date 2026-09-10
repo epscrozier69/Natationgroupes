@@ -205,9 +205,6 @@
   .badge-nonintegre{background:#334155;color:#fff;}
   .badge-fille{background:#ec4899;color:#fff;}
   .badge-garcon{background:#3b82f6;color:#fff;}
-  .stat-line.stat-absent{background:#fbbf24;}
-  .stat-line.stat-dispense{background:#c4b5fd;}
-  .stat-line.stat-nonintegre{background:#cbd5e1;}
   tr:hover td{background:#f8fafc;}
   .badge{
     display:inline-block;
@@ -308,38 +305,45 @@
   .results-student-header .name{font-size:1.3rem;font-weight:700;line-height:1.2;}
   .stats-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
     gap:14px;
   }
   .stat-card{
     background:var(--card);
     border-radius:var(--radius);
     box-shadow:var(--shadow);
-    padding:16px;
+    padding:14px 16px;
   }
-  .stat-card h3{margin:0 0 10px;color:#1e3a8a;}
-  .stat-line{
-    display:flex;
-    justify-content:space-between;
-    padding:4px 0;
-    font-size:.88rem;
-    border-bottom:1px dashed #e2e8f0;
+  .stat-card-header{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin-bottom:8px;
   }
-  .stat-line b{color:#0f172a;}
-  .stat-line.stat-fort,.stat-line.stat-moyen,.stat-line.stat-non{
-    flex-direction:column;
-    align-items:stretch;
-    gap:2px;
-    border-radius:6px;
-    padding:6px 8px;
-    border-bottom:none;
+  .stat-card-header h3{margin:0;color:#1e3a8a;font-size:1rem;}
+  .stat-card-total{font-size:1.5rem;font-weight:800;color:#1e3a8a;line-height:1;}
+  .stat-card-total small{font-size:.7rem;font-weight:500;color:#64748b;margin-left:3px;}
+  .stat-gender-row{
+    display:flex;gap:6px;margin-bottom:10px;
   }
-  .stat-row{display:flex;justify-content:space-between;}
-  .stat-sub{font-size:.72rem;font-weight:400;opacity:.85;}
-  .stat-line.stat-fort{background:#3b82f6;color:#fff;}
-  .stat-line.stat-fort b{color:#fff;}
-  .stat-line.stat-moyen{background:#fed7aa;}
-  .stat-line.stat-non{background:#fecaca;}
+  .stat-gender-pill{
+    border-radius:20px;padding:3px 12px;font-size:.8rem;font-weight:700;
+  }
+  .sgp-f{background:#fce7f3;color:#be185d;}
+  .sgp-g{background:#dbeafe;color:#1d4ed8;}
+  .stat-pills{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
+  }
+  .stat-pill{
+    border-radius:9px;padding:7px 5px 5px;text-align:center;
+  }
+  .sp-label{font-size:.62rem;font-weight:700;line-height:1;margin-bottom:3px;opacity:.9;}
+  .sp-count{font-size:1.25rem;font-weight:800;line-height:1;}
+  .sp-fg{font-size:.6rem;margin-top:2px;opacity:.8;white-space:nowrap;}
+  .sp-fort{background:#3b82f6;color:#fff;}
+  .sp-moyen{background:#fb923c;color:#fff;}
+  .sp-non{background:#ef4444;color:#fff;}
+  .sp-absent{background:#fbbf24;color:#713f12;}
+  .sp-dispense{background:#a78bfa;color:#fff;}
+  .sp-nonintegre{background:#64748b;color:#fff;}
   .modal-overlay{
     display:none;
     position:fixed;
@@ -1091,36 +1095,31 @@
     return computeStats(students.filter(s=>s.classe===classe));
   }
 
+  function sp(cls, label, count, f, g){
+    return `<div class="stat-pill ${cls}">
+      <div class="sp-label">${label}</div>
+      <div class="sp-count">${count}</div>
+      <div class="sp-fg">F:${f} · G:${g}</div>
+    </div>`;
+  }
   function statCardHtml(title, st){
     return `
       <div class="stat-card">
-        <h3>${title}</h3>
-        <div class="stat-line">Nombre d'élèves <b>${st.total}</b></div>
-        <div class="stat-line">F <b>${st.filles}</b></div>
-        <div class="stat-line">G <b>${st.garcons}</b></div>
-        <div class="stat-line stat-fort">
-          <div class="stat-row">Groupe fort <b>${st.fort}</b></div>
-          <div class="stat-sub">F : ${st.fortFilles} — G : ${st.fortGarcons}</div>
+        <div class="stat-card-header">
+          <h3>${title}</h3>
+          <span class="stat-card-total">${st.total}<small>élèves</small></span>
         </div>
-        <div class="stat-line stat-moyen">
-          <div class="stat-row">Groupe moyen <b>${st.moyen}</b></div>
-          <div class="stat-sub">F : ${st.moyenFilles} — G : ${st.moyenGarcons}</div>
+        <div class="stat-gender-row">
+          <span class="stat-gender-pill sgp-f">F &nbsp;<b>${st.filles}</b></span>
+          <span class="stat-gender-pill sgp-g">G &nbsp;<b>${st.garcons}</b></span>
         </div>
-        <div class="stat-line stat-non">
-          <div class="stat-row">Groupe non nageur <b>${st.nonNageur}</b></div>
-          <div class="stat-sub">F : ${st.nonNageurFilles} — G : ${st.nonNageurGarcons}</div>
-        </div>
-        <div class="stat-line stat-absent">
-          <div class="stat-row">Absent(e)s <b>${st.absent}</b></div>
-          <div class="stat-sub">F : ${st.absentFilles} — G : ${st.absentGarcons}</div>
-        </div>
-        <div class="stat-line stat-dispense">
-          <div class="stat-row">Dispensé(e)s <b>${st.dispense}</b></div>
-          <div class="stat-sub">F : ${st.dispenseFilles} — G : ${st.dispenseGarcons}</div>
-        </div>
-        <div class="stat-line stat-nonintegre">
-          <div class="stat-row">Non intégré(e)s EPS <b>${st.nonIntegre}</b></div>
-          <div class="stat-sub">F : ${st.nonIntegreFilles} — G : ${st.nonIntegreGarcons}</div>
+        <div class="stat-pills">
+          ${sp("sp-fort","Fort",st.fort,st.fortFilles,st.fortGarcons)}
+          ${sp("sp-moyen","Moyen",st.moyen,st.moyenFilles,st.moyenGarcons)}
+          ${sp("sp-non","Non nag.",st.nonNageur,st.nonNageurFilles,st.nonNageurGarcons)}
+          ${sp("sp-absent","Absent",st.absent,st.absentFilles,st.absentGarcons)}
+          ${sp("sp-dispense","Dispensé",st.dispense,st.dispenseFilles,st.dispenseGarcons)}
+          ${sp("sp-nonintegre","Non intég.",st.nonIntegre,st.nonIntegreFilles,st.nonIntegreGarcons)}
         </div>
       </div>
     `;
