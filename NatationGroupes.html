@@ -341,9 +341,9 @@
   .sp-fort{background:#3b82f6;color:#fff;}
   .sp-moyen{background:#fb923c;color:#fff;}
   .sp-non{background:#ef4444;color:#fff;}
-  .sp-absent{background:#fbbf24;color:#713f12;}
-  .sp-dispense{background:#a78bfa;color:#fff;}
-  .sp-nonintegre{background:#64748b;color:#fff;}
+  .sp-absent{background:#d97706;color:#fff;}
+  .sp-dispense{background:#7c3aed;color:#fff;}
+  .sp-nonintegre{background:#475569;color:#fff;}
 
   /* Listes élèves par groupe (intégrées dans la stat-card) */
   .gc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:10px;border-top:2px solid #e2e8f0;padding-top:10px;}
@@ -1265,30 +1265,73 @@
 
   function exportGroupesPDF(title, classesJson, profFort, profMoyen, profNon){
     const classes = JSON.parse(classesJson.replace(/&quot;/g,'"'));
+    const st = combinedStats(classes);
     const forts  = _groupeEleves(classes,"Fort");
     const moyens = _groupeEleves(classes,"Moyen");
     const nons   = _groupeEleves(classes,"Non nageur");
-    const tbl = (list,prof,color,label) => {
+
+    const pill = (color,label,count,f,g) =>
+      `<div style="background:${color};color:#fff;border-radius:9px;padding:8px 6px;text-align:center;">
+        <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">${label}</div>
+        <div style="font-size:22px;font-weight:800;line-height:1;">${count}</div>
+        <div style="font-size:9px;margin-top:3px;opacity:.9;">Filles : ${f} · Garçons : ${g}</div>
+      </div>`;
+
+    const col = (color,label,prof,list) => {
       const rows = list.length===0
-        ? `<tr><td colspan="4" style="color:#94a3b8;font-style:italic;padding:8px">Aucun élève</td></tr>`
-        : list.map((s,i)=>`<tr><td>${i+1}</td><td><b>${s.nom}</b></td><td>${s.prenom}</td><td>${s.classe}</td></tr>`).join("");
-      return `<div style="break-inside:avoid;margin-bottom:20px;">
-        <div style="background:${color};color:#fff;padding:10px 14px;border-radius:8px 8px 0 0;">
-          <b style="font-size:13px;text-transform:uppercase">${label}</b>
-          <span style="float:right;font-size:13px">${prof} — ${list.length} élève(s)</span>
+        ? `<div style="padding:10px;font-size:11px;color:#94a3b8;font-style:italic;">Aucun élève</div>`
+        : list.map((s,i)=>`
+            <div style="display:flex;justify-content:space-between;padding:5px 10px;border-bottom:1px solid #f1f5f9;font-size:11px;">
+              <span><b>${s.nom}</b> ${s.prenom}</span>
+              <span style="background:#f1f5f9;border-radius:4px;padding:1px 6px;color:#64748b;font-size:10px;">${s.classe}</span>
+            </div>`).join("");
+      return `<div style="border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;break-inside:avoid;">
+        <div style="background:${color};color:#fff;padding:9px 12px;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;">${label}</div>
+          <div style="font-size:10px;opacity:.9;margin-top:2px;">${prof}</div>
+          <div style="font-size:18px;font-weight:800;margin-top:2px;">${list.length}</div>
         </div>
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead><tr style="background:#f8fafc;"><th style="padding:5px 10px;text-align:left;width:28px">N°</th><th style="padding:5px 10px;text-align:left">Nom</th><th style="padding:5px 10px;text-align:left">Prénom</th><th style="padding:5px 10px;text-align:left">Classe</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table></div>`;
+        <div style="background:#fff;">${rows}</div>
+      </div>`;
     };
+
     const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Groupes Natation — ${title}</title>
-      <style>body{font-family:sans-serif;margin:20px;color:#0f172a;}h1{font-size:15px;color:#1e3a8a;border-bottom:2px solid #2563eb;padding-bottom:6px;margin-bottom:16px;}td,th{border-bottom:1px solid #e2e8f0;}@media print{body{margin:0;}@page{margin:12mm;}}</style>
+      <style>
+        *{box-sizing:border-box;}
+        body{font-family:system-ui,sans-serif;margin:16px;color:#0f172a;background:#fff;}
+        @media print{body{margin:0;}@page{margin:10mm;size:A4 landscape;}}
+      </style>
     </head><body>
-      <h1>EPS — Groupes de Natation 2026-2027 &nbsp;|&nbsp; ${title}</h1>
-      ${tbl(forts, profFort,"#3b82f6","Groupe Fort")}
-      ${tbl(moyens,profMoyen,"#fb923c","Groupe Moyen")}
-      ${tbl(nons,  profNon,  "#ef4444","Non Nageurs")}
+      <!-- En-tête -->
+      <div style="background:linear-gradient(135deg,#1e3a8a,#4f46e5);color:#fff;padding:14px 18px;border-radius:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:13px;opacity:.8;">EPS — Groupes de Natation 2026-2027</div>
+          <div style="font-size:18px;font-weight:800;margin-top:2px;">${title}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:32px;font-weight:800;line-height:1;">${st.total}</div>
+          <div style="font-size:11px;opacity:.8;">élèves</div>
+          <div style="margin-top:4px;display:flex;gap:6px;justify-content:flex-end;">
+            <span style="background:rgba(255,255,255,.2);border-radius:20px;padding:2px 10px;font-size:11px;">F ${st.filles}</span>
+            <span style="background:rgba(255,255,255,.2);border-radius:20px;padding:2px 10px;font-size:11px;">G ${st.garcons}</span>
+          </div>
+        </div>
+      </div>
+      <!-- Pastilles statistiques (3×2) -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">
+        ${pill("#3b82f6","Fort",        st.fort,        st.fortFilles,        st.fortGarcons)}
+        ${pill("#fb923c","Moyen",       st.moyen,       st.moyenFilles,       st.moyenGarcons)}
+        ${pill("#ef4444","Non Nageur",  st.nonNageur,   st.nonNageurFilles,   st.nonNageurGarcons)}
+        ${pill("#d97706","Absent",      st.absent,      st.absentFilles,      st.absentGarcons)}
+        ${pill("#7c3aed","Dispensé",    st.dispense,    st.dispenseFilles,    st.dispenseGarcons)}
+        ${pill("#475569","Non intégré", st.nonIntegre,  st.nonIntegreFilles,  st.nonIntegreGarcons)}
+      </div>
+      <!-- Listes élèves par groupe (3 colonnes) -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        ${col("#3b82f6","Groupe Fort",  profFort,  forts)}
+        ${col("#fb923c","Groupe Moyen", profMoyen, moyens)}
+        ${col("#ef4444","Non Nageurs",  profNon,   nons)}
+      </div>
       <script>window.onload=()=>{window.print();}<\/script>
     </body></html>`;
     const w=window.open("","_blank"); if(w){w.document.write(html);w.document.close();}
