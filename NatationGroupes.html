@@ -344,6 +344,34 @@
   .sp-absent{background:#fbbf24;color:#713f12;}
   .sp-dispense{background:#a78bfa;color:#fff;}
   .sp-nonintegre{background:#64748b;color:#fff;}
+
+  /* Listes élèves par groupe */
+  .groupes-creneau{margin-top:28px;}
+  .groupes-creneau-title{
+    font-size:1.05rem;font-weight:800;color:#1e3a8a;
+    border-bottom:3px solid #2563eb;padding-bottom:6px;margin-bottom:14px;
+  }
+  .groupes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+  .groupe-block{border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
+  .groupe-block-header{
+    padding:9px 14px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .groupe-block-header .gb-title{font-size:.85rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;}
+  .groupe-block-header .gb-prof{font-size:.78rem;font-weight:600;opacity:.9;}
+  .groupe-block-header .gb-count{font-size:1.1rem;font-weight:800;margin-left:8px;}
+  .gb-fort .groupe-block-header{background:#3b82f6;color:#fff;}
+  .gb-moyen .groupe-block-header{background:#fb923c;color:#fff;}
+  .gb-non .groupe-block-header{background:#ef4444;color:#fff;}
+  .groupe-block-body{background:var(--card);padding:6px 0;}
+  .groupe-eleve{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:5px 14px;font-size:.82rem;border-bottom:1px solid #f1f5f9;
+  }
+  .groupe-eleve:last-child{border-bottom:none;}
+  .groupe-eleve .ge-name{font-weight:600;color:#0f172a;}
+  .groupe-eleve .ge-classe{font-size:.75rem;color:#64748b;background:#f1f5f9;border-radius:4px;padding:1px 6px;}
+  .groupe-eleve-empty{padding:10px 14px;font-size:.82rem;color:#94a3b8;font-style:italic;}
+
   .modal-overlay{
     display:none;
     position:fixed;
@@ -1165,10 +1193,52 @@
       <div class="stats-grid" id="stats-global"></div>
       <h3 style="margin:24px 0 12px;color:#1e3a8a;">Statistiques regroupées</h3>
       <div class="stats-grid" id="stats-groupes"></div>
+      <div id="listes-groupes"></div>
     `;
   }
   function combinedStats(classesArr){
     return computeStats(students.filter(s=>classesArr.includes(s.classe)));
+  }
+
+  function groupeBlockHtml(cssClass, label, prof, list){
+    const rows = list.length === 0
+      ? `<div class="groupe-eleve-empty">Aucun élève</div>`
+      : list.map(s=>`
+          <div class="groupe-eleve">
+            <span class="ge-name">${s.nom} ${s.prenom}</span>
+            <span class="ge-classe">${s.classe}</span>
+          </div>`).join("");
+    return `
+      <div class="groupe-block ${cssClass}">
+        <div class="groupe-block-header">
+          <div>
+            <div class="gb-title">${label}</div>
+            <div class="gb-prof">${prof}</div>
+          </div>
+          <span class="gb-count">${list.length}</span>
+        </div>
+        <div class="groupe-block-body">${rows}</div>
+      </div>`;
+  }
+
+  function creneauListHtml(title, classes, profFort, profMoyen, profNon){
+    const inClasses = students.filter(s => classes.includes(s.classe));
+    const byAlpha = (a,b) => {
+      const nc = a.classe.localeCompare(b.classe);
+      return nc !== 0 ? nc : a.nom.localeCompare(b.nom) || a.prenom.localeCompare(b.prenom);
+    };
+    const forts  = inClasses.filter(s=>s.groupe==="Fort").sort(byAlpha);
+    const moyens = inClasses.filter(s=>s.groupe==="Moyen").sort(byAlpha);
+    const nons   = inClasses.filter(s=>s.groupe==="Non nageur").sort(byAlpha);
+    return `
+      <div class="groupes-creneau">
+        <div class="groupes-creneau-title">${title}</div>
+        <div class="groupes-grid">
+          ${groupeBlockHtml("gb-fort",  "Groupe fort",      profFort,  forts)}
+          ${groupeBlockHtml("gb-moyen", "Groupe moyen",     profMoyen, moyens)}
+          ${groupeBlockHtml("gb-non",   "Non nageurs",      profNon,   nons)}
+        </div>
+      </div>`;
   }
 
   function renderStats(){
@@ -1180,6 +1250,10 @@
     document.getElementById("stats-groupes").innerHTML =
       statCardHtml("LUNDI — 6ème1 + 6ème2", combinedStats(["6ème1","6ème2"]))
       + statCardHtml("VENDREDI — 6ème3 + 6ème4", combinedStats(["6ème3","6ème4"]));
+
+    document.getElementById("listes-groupes").innerHTML =
+      creneauListHtml("LUNDI — 6ème1 + 6ème2",   ["6ème1","6ème2"], "Mme JOUD", "Mme MEKRALDI",     "Mme CROZIER")
+    + creneauListHtml("VENDREDI — 6ème3 + 6ème4", ["6ème3","6ème4"], "Mme JOUD", "M. GOUTTE-TOQUET", "Mme CROZIER");
   }
 
   function renderAll(){
