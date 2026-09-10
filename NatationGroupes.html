@@ -1188,12 +1188,10 @@
   function buildStatsTab(){
     document.getElementById("tab-stats").innerHTML = `
       <div class="stats-grid" id="stats-global"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin:24px 0 12px;">
-        <h3 style="margin:0;color:#1e3a8a;">Statistiques regroupées</h3>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-export" onclick="exportTousGroupesExcel()" style="font-size:.8rem;padding:7px 14px;">⬇ Excel — Lundi + Vendredi</button>
-          <button class="btn" style="background:#6366f1;color:#fff;font-size:.8rem;padding:7px 14px;" onclick="exportTousGroupesPDF()">🖨 PDF — Lundi + Vendredi</button>
-        </div>
+      <div style="display:flex;align-items:center;gap:12px;margin:24px 0 12px;">
+        <h3 style="margin:0;color:#1e3a8a;white-space:nowrap;">Statistiques regroupées</h3>
+        <button class="btn btn-export" onclick="exportTousGroupesExcel()" style="font-size:.8rem;padding:7px 14px;">⬇ Excel — Lundi + Vendredi</button>
+        <button class="btn" style="background:#6366f1;color:#fff;font-size:.8rem;padding:7px 14px;" onclick="exportTousGroupesPDF()">🖨 PDF — Lundi + Vendredi</button>
       </div>
       <div class="stats-grid" id="stats-groupes"></div>
     `;
@@ -1228,12 +1226,16 @@
     return `
       <div class="stat-card">
         <div class="stat-card-header">
-          <h3>${title}</h3>
-          <span class="stat-card-total">${st.total}<small>élèves</small></span>
-        </div>
-        <div class="stat-gender-row">
-          <span class="stat-gender-pill sgp-f">F &nbsp;<b>${st.filles}</b></span>
-          <span class="stat-gender-pill sgp-g">G &nbsp;<b>${st.garcons}</b></span>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <h3 style="margin:0;">${title}</h3>
+            <span class="stat-card-total" style="font-size:1.1rem;">${st.total}<small>élèves</small></span>
+            <span class="stat-gender-pill sgp-f" style="margin-left:4px;">F &nbsp;<b>${st.filles}</b></span>
+            <span class="stat-gender-pill sgp-g">G &nbsp;<b>${st.garcons}</b></span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-export" onclick="exportGroupesExcel('${title}','${cp}','${profFort}','${profMoyen}','${profNon}')">⬇ Excel</button>
+            <button class="btn" style="background:#6366f1;color:#fff;" onclick="exportGroupesPDF('${title}','${cp}','${profFort}','${profMoyen}','${profNon}')">🖨 PDF</button>
+          </div>
         </div>
         <div class="stat-pills">
           ${sp("sp-fort","Fort",st.fort,st.fortFilles,st.fortGarcons)}
@@ -1242,10 +1244,6 @@
           ${sp("sp-absent","Absent",st.absent,st.absentFilles,st.absentGarcons)}
           ${sp("sp-dispense","Dispensé",st.dispense,st.dispenseFilles,st.dispenseGarcons)}
           ${sp("sp-nonintegre","Non intég.",st.nonIntegre,st.nonIntegreFilles,st.nonIntegreGarcons)}
-        </div>
-        <div class="gc-export-row">
-          <button class="btn btn-export" onclick="exportGroupesExcel('${title}','${cp}','${profFort}','${profMoyen}','${profNon}')">⬇ Excel</button>
-          <button class="btn" style="background:#6366f1;color:#fff;" onclick="exportGroupesPDF('${title}','${cp}','${profFort}','${profMoyen}','${profNon}')">🖨 PDF</button>
         </div>
         <div class="gc-grid">
           ${gcol("gc-fort","Groupe Fort",profFort,forts.length,forts)}
@@ -1263,7 +1261,7 @@
     aoa.push([`EPS — Groupes de Natation 2026-2027 | ${title}`]);
     aoa.push([]);
     // Ligne en-têtes de groupe
-    aoa.push([`GROUPE FORT — ${profFort}`,"","","","", "", `GROUPE MOYEN — ${profMoyen}`,"","","","", "", `NON NAGEURS — ${profNon}`]);
+    aoa.push([`GROUPE FORT — ${profFort}`,"","","","","","", `GROUPE MOYEN — ${profMoyen}`,"","","","","","", `NON NAGEURS — ${profNon}`]);
     // Ligne en-têtes de colonnes
     aoa.push([...H,"", "",...H,"", "",...H]);
     // Lignes données (côte à côte)
