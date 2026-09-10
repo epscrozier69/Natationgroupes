@@ -1282,6 +1282,13 @@
       {wch:4},{wch:18},{wch:14},{wch:8},{wch:6},{wch:2},{wch:2},
       {wch:4},{wch:18},{wch:14},{wch:8},{wch:6}
     ];
+    // Fusions : titre ligne 0, en-têtes groupe ligne 2
+    ws["!merges"] = [
+      {s:{r:0,c:0}, e:{r:0,c:18}},  // titre sur toute la largeur
+      {s:{r:2,c:0}, e:{r:2,c:4}},   // GROUPE FORT
+      {s:{r:2,c:7}, e:{r:2,c:11}},  // GROUPE MOYEN
+      {s:{r:2,c:14},e:{r:2,c:18}}   // NON NAGEURS
+    ];
     return ws;
   }
 
