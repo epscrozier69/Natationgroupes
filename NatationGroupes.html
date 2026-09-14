@@ -463,7 +463,7 @@
     return CLASS_BY_NORMALIZED[normalizeClasse(str)] || (str||"").toString().trim();
   }
   const SETTINGS_KEY = "natation_settings";
-  const DEFAULT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzvLydFnpV68g5sWz4DBnhjqgESWag2FDQS5dVvDfGJL00WsbfdsoKJCUZWvA3oL0wF/exec";
+  const DEFAULT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxL_og2Fh-yJ9v7gDK8auv8LUAP-k4TBL9i34xlLNoKxG9uvLVamPfXOYga9zhOhft2/exec";
 
   const ENTREE_OPTS = [["TB","Plongeon"],["S","Saut"],["I","Descente à l'échelle"]];
   const VENTRALE_OPTS = [["TB","Crawl aligné"],["S","Corps oblique"],["F","S'arrête"],["I","Impossible"]];
@@ -576,10 +576,16 @@
   let _localDirty = false;     // true = des modifications locales ne sont pas encore dans le Sheet
   let _forceReplace = false;   // true = prochain sync pousse sans fetch (import complet)
 
-  function _offlineStatus(){
-    setSyncStatus(_localDirty
-      ? "⏳ Hors ligne — modifications en attente de synchronisation"
-      : "Hors ligne — données locales à jour");
+  function _offlineStatus(fromError){
+    if(fromError){
+      setSyncStatus(_localDirty
+        ? "⚠ Erreur de synchro — modifications en attente"
+        : "⚠ Erreur de connexion au serveur — données locales à jour");
+    } else {
+      setSyncStatus(_localDirty
+        ? "⏳ Hors ligne — modifications en attente"
+        : "Hors ligne — données locales à jour");
+    }
   }
 
   // Dès que la connexion revient, on déclenche une sync automatique
@@ -620,7 +626,7 @@
         setSyncStatus("Synchronisé ✓ " + t.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"}) + " à " + t.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}));
       }catch(e){
         console.error("Erreur de synchronisation:", e);
-        _offlineStatus();
+        _offlineStatus(true);
       }
     }).catch(()=>{ _syncScheduled = false; });
     return _syncChain;
@@ -862,7 +868,7 @@
       const isNetErr = /load failed|failed to fetch|network/i.test(e.message);
       const isJsonErr = /json|syntax|unexpected/i.test(e.message);
       if(isNetErr){
-        alert("Impossible de joindre Google Apps Script.\n\nVérifiez :\n• Connexion internet active\n• URL du Web App configurée dans ⚙\n• Déploiement Apps Script : « Tous les utilisateurs » (y compris anonymes)\n\nErreur : " + e.message);
+        alert("Impossible de joindre Google Apps Script.\n\nVérifiez :\n• Connexion internet active\n• Dans Apps Script : Déployer → « Qui a accès » = « Tous (y compris les utilisateurs anonymes) »\n\nErreur : " + e.message);
       } else if(isJsonErr){
         alert("Le serveur a renvoyé une réponse inattendue (pas du JSON).\n\nCause probable : le déploiement Apps Script demande une connexion Google.\nDans Apps Script → Déployer → paramétrez « Qui a accès » sur « Tous (y compris les utilisateurs anonymes) ».\n\nErreur : " + e.message);
       } else {
