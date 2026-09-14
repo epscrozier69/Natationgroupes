@@ -419,8 +419,6 @@
   <h1>🏊 EPS : Groupe de Natation pour l'année 2026-2027</h1>
   <div class="sync-zone">
     <span id="sync-status">Mode local</span>
-    <button class="icon-btn" id="btn-sync-now" title="Synchroniser maintenant">⟳</button>
-    <button class="icon-btn" id="btn-settings" title="Paramètres">⚙</button>
   </div>
 </header>
 
@@ -428,22 +426,6 @@
 
 <main id="tabs-content"></main>
 
-<div class="modal-overlay" id="settings-modal">
-  <div class="modal" style="width:min(520px,95vw);">
-    <h2>⚙ Paramètres</h2>
-
-    <p class="hint" style="margin-bottom:4px;"><b>URL du Web App Google Apps Script</b></p>
-    <p class="hint">Déployé sur votre Google Sheet partagé (se termine par /exec). Sans cette URL, mode local uniquement.</p>
-    <input type="text" id="input-webapp-url" placeholder="https://script.google.com/macros/s/.../exec">
-
-    <p class="hint" style="margin-top:8px;">L'import lit l'onglet "Liste des élèves du collège" de votre Google Sheet. Les colonnes Nom, Prénom, Classe, Sexe sont détectées automatiquement.</p>
-
-    <div class="form-actions">
-      <button class="btn btn-add" id="btn-save-settings">Enregistrer</button>
-      <button class="btn btn-cancel" id="btn-close-settings">Fermer</button>
-    </div>
-  </div>
-</div>
 
 <div class="modal-overlay" id="results-modal">
   <div class="results-modal-card" id="results-modal-card"></div>
@@ -498,8 +480,7 @@
 
   function loadLocal(){
     try{ students = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ students = []; }
-    try{ settings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { webAppUrl:"" }; }catch(e){ settings = { webAppUrl:"" }; }
-    if(!settings.webAppUrl) settings.webAppUrl = DEFAULT_WEBAPP_URL;
+    settings.webAppUrl = DEFAULT_WEBAPP_URL;
   }
   function saveLocal(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
@@ -635,7 +616,8 @@
         }
         await pushRemote(students);
         _localDirty = false;
-        setSyncStatus("Synchronisé ✓ " + new Date().toLocaleTimeString());
+        const t = new Date();
+        setSyncStatus("Synchronisé ✓ " + t.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"}) + " à " + t.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}));
       }catch(e){
         console.error("Erreur de synchronisation:", e);
         _offlineStatus();
@@ -651,7 +633,7 @@
     _localDirty = true;
     renderAll();
     if(!isValidWebAppUrl()){
-      setSyncStatus(settings.webAppUrl ? "URL invalide - vérifiez les paramètres (⚙)" : "Mode local");
+      setSyncStatus("Mode local");
       return Promise.resolve();
     }
     if(!navigator.onLine){
@@ -811,7 +793,7 @@
 
   async function importCollegeList(){
     if(!isValidWebAppUrl()){
-      alert("Configurez d'abord l'URL du Web App Google Apps Script dans les paramètres (⚙).");
+      alert("URL du Web App non configurée. Contactez l'administrateur.");
       return;
     }
     try{
@@ -822,7 +804,7 @@
       }
       if(collegeList.length === 0){
         setSyncStatus("Import : aucun élève trouvé");
-        alert("L'onglet source ne contient aucun élève, ou les colonnes n'ont pas été reconnues.\n\nVérifiez dans les paramètres (⚙) :\n• Le nom exact de l'onglet\n• L'URL du Google Sheet (si différent du sheet principal)");
+        alert("L'onglet source ne contient aucun élève, ou les colonnes n'ont pas été reconnues.\n\nVérifiez que l'onglet \"Liste des élèves du collège\" existe dans le Google Sheet et contient les colonnes Nom, Prénom, Classe, Sexe.");
         return;
       }
       // Filtrer uniquement les élèves des classes 6ème1-6ème4
@@ -862,23 +844,29 @@
           added++;
         }
       });
-      // Appliquer localement et pousser directement (sans récupérer l'ancien Sheet)
+      // Appliquer localement
       students = newList;
       saveLocal();
       _localDirty = false;
       renderAll();
-      if(isValidWebAppUrl() && navigator.onLine){
-        setSyncStatus("Import — envoi vers Google Sheet...");
-        await pushRemote(students);
-      }
       setSyncStatus("Import terminé ✓ — " + added + " ajouté(s), " + conserves + " conservé(s) avec résultats");
+      // Pousser vers le Sheet en arrière-plan (non bloquant)
+      if(isValidWebAppUrl() && navigator.onLine){
+        pushRemote(students).catch(e=>{
+          console.warn("Sync post-import échouée (données conservées localement):", e.message);
+          setSyncStatus("Import ✓ — sync différée (reconnexion prévue)");
+        });
+      }
     }catch(e){
       setSyncStatus("Erreur d'import");
       const isNetErr = /load failed|failed to fetch|network/i.test(e.message);
+      const isJsonErr = /json|syntax|unexpected/i.test(e.message);
       if(isNetErr){
-        alert("L'iPad ne parvient pas à joindre Google Apps Script.\n\nAssurez-vous que :\n• L'iPad est connecté à internet\n• L'URL du Web App est configurée dans ⚙\n• Le déploiement Apps Script autorise « Tous les utilisateurs »\n\nErreur : " + e.message);
+        alert("Impossible de joindre Google Apps Script.\n\nVérifiez :\n• Connexion internet active\n• URL du Web App configurée dans ⚙\n• Déploiement Apps Script : « Tous les utilisateurs » (y compris anonymes)\n\nErreur : " + e.message);
+      } else if(isJsonErr){
+        alert("Le serveur a renvoyé une réponse inattendue (pas du JSON).\n\nCause probable : le déploiement Apps Script demande une connexion Google.\nDans Apps Script → Déployer → paramétrez « Qui a accès » sur « Tous (y compris les utilisateurs anonymes) ».\n\nErreur : " + e.message);
       } else {
-        alert("Erreur lors de l'import :\n" + e.message + "\n\nVérifiez les paramètres (⚙) et la connexion internet.");
+        alert("Erreur lors de l'import :\n" + e.message + "\n\nVérifiez la connexion internet.");
       }
     }
   }
@@ -1429,25 +1417,7 @@
   // ===== Paramètres / synchronisation =====
 
   function initSettingsModal(){
-    const overlay = document.getElementById("settings-modal");
-    document.getElementById("btn-settings").addEventListener("click", ()=>{
-      document.getElementById("input-webapp-url").value = settings.webAppUrl||"";
-      overlay.classList.add("show");
-    });
-    document.getElementById("btn-close-settings").addEventListener("click", ()=> overlay.classList.remove("show"));
-    document.getElementById("btn-save-settings").addEventListener("click", ()=>{
-      const url = document.getElementById("input-webapp-url").value.trim();
-      if(url && !/^https:\/\//i.test(url)){
-        alert("L'URL du Web App doit commencer par https://. Elle n'a pas été enregistrée.");
-        return;
-      }
-      settings.webAppUrl = url;
-      saveSettings();
-      overlay.classList.remove("show");
-      if(settings.webAppUrl && navigator.onLine) _queueSync();
-      else setSyncStatus(settings.webAppUrl ? (navigator.onLine ? "Configuré" : "⏳ Hors ligne — synchronisation dès reconnexion") : "Mode local");
-    });
-    document.getElementById("btn-sync-now").addEventListener("click", ()=> syncMutate(list=>list));
+    // URL fixe — pas de modal ni de boutons
   }
 
   function autoSyncTick(){
