@@ -1035,6 +1035,7 @@
   let editingResultsSnapshot = {};
 
   let _currentEditClasse = null;
+  let _nextStudentId = null;
 
   function startEditResults(classe, id){
     const s = students.find(x=>x.id===id);
@@ -1042,7 +1043,24 @@
     _currentEditClasse = classe;
     editingResultsId[classe] = id;
     editingResultsSnapshot[classe] = { nom:s.nom, prenom:s.prenom, classe:s.classe, sexe:s.sexe };
+
+    // Trouver l'élève suivant dans l'ordre d'affichage
+    const classList = students.filter(x=>x.classe===classe);
+    const ordered = sortedStudents(applyFilters(classList, classFilterState[classe]||{}), classSortState[classe]||{col:"nom",dir:1});
+    const idx = ordered.findIndex(x=>x.id===id);
+    const next = idx >= 0 && idx+1 < ordered.length ? ordered[idx+1] : null;
+    const afterNext = idx >= 0 && idx+2 < ordered.length ? ordered[idx+2] : null;
+    _nextStudentId = next ? next.id : null;
+
     document.getElementById("modal-results-name").textContent = `${s.prenom} ${s.nom}`;
+    const nextEl = document.getElementById("modal-results-next");
+    if(next){
+      nextEl.innerHTML = `⏭ Se prépare : <b>${next.prenom} ${next.nom}</b>`
+        + (afterNext ? `&nbsp;&nbsp;·&nbsp;&nbsp;Après : ${afterNext.prenom} ${afterNext.nom}` : "");
+    } else {
+      nextEl.textContent = "Dernier élève de la liste";
+    }
+
     setOptionGroup("modal-entree", s.entree);
     setOptionGroup("modal-ventrale", s.ventrale);
     setOptionGroup("modal-dorsale", s.dorsale);
@@ -1069,6 +1087,7 @@
       commentaire: document.getElementById("modal-commentaire").value.trim(),
       updatedAt: nowIso()
     };
+    const nextId = _nextStudentId;
     syncMutate(list=>{
       const idx = list.findIndex(s=>s.id===id);
       if(idx>-1){
@@ -1079,7 +1098,11 @@
       }
       return list;
     });
-    document.getElementById("results-modal").classList.remove("show");
+    if(nextId){
+      startEditResults(classe, nextId);
+    } else {
+      document.getElementById("results-modal").classList.remove("show");
+    }
   }
 
   function computeStats(list){
@@ -1464,6 +1487,7 @@
       <div class="results-student-header">
         <div class="label">Saisie des résultats</div>
         <div class="name" id="modal-results-name"></div>
+        <div id="modal-results-next" style="font-size:.78rem;opacity:.85;margin-top:4px;"></div>
       </div>
       <form id="modal-results-form">
         ${buildOptionField("modal-entree","Entrée dans l'eau",ENTREE_OPTS)}
