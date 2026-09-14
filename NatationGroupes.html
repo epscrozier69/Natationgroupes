@@ -190,6 +190,13 @@
   th[data-col="numero"]{background:var(--col-numero);}
   th[data-col="nom"]{background:var(--col-nom);}
   th[data-col="prenom"]{background:var(--col-prenom);}
+  /* Colonnes figées au scroll horizontal */
+  th[data-col="numero"], td.col-num   {position:sticky;left:0;    z-index:3;min-width:36px; width:36px; background:var(--col-numero);color:#fff;}
+  th[data-col="nom"],    td.col-nom   {position:sticky;left:36px; z-index:3;min-width:140px;width:140px;background:var(--col-nom);color:#fff;}
+  th[data-col="prenom"], td.col-prenom{position:sticky;left:176px;z-index:3;min-width:130px;width:130px;background:var(--col-prenom);color:#fff;}
+  td.col-num   {background:#f1f5f9;color:#374151;}
+  td.col-nom   {background:#eff6ff;color:#1e3a8a;font-weight:600;}
+  td.col-prenom{background:#f5f3ff;color:#4c1d95;}
   th[data-col="classe"]{background:var(--col-classe);}
   th[data-col="sexe"]{background:var(--col-sexe);}
   th[data-col="entree"]{background:var(--col-entree);}
@@ -938,9 +945,9 @@
     }
     tbody.innerHTML = list.map((s,i)=>`
       <tr>
-        <td>${i+1}</td>
-        <td>${s.nom}</td>
-        <td>${s.prenom}</td>
+        <td class="col-num">${i+1}</td>
+        <td class="col-nom">${s.nom}</td>
+        <td class="col-prenom">${s.prenom}</td>
         <td>${s.classe}</td>
         <td>${sexeBadge(s.sexe)}</td>
         <td>${levelBadge(s.entree)}</td>
@@ -1155,9 +1162,9 @@
     }else{
       tbody.innerHTML = list.map((s,i)=>`
         <tr>
-          <td>${i+1}</td>
-          <td>${s.nom}</td>
-          <td>${s.prenom}</td>
+          <td class="col-num">${i+1}</td>
+          <td class="col-nom">${s.nom}</td>
+          <td class="col-prenom">${s.prenom}</td>
           <td>${sexeBadge(s.sexe)}</td>
           <td>${levelBadge(s.entree)}</td>
           <td>${levelBadge(s.ventrale)}</td>
