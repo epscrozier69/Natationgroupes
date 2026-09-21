@@ -1511,9 +1511,14 @@
       group.querySelectorAll(".option-btn").forEach(btn=>{
         btn.addEventListener("click", ()=>{
           const fieldId = group.dataset.field;
-          document.getElementById(fieldId).value = btn.dataset.value;
+          const alreadySelected = btn.classList.contains("selected");
           group.querySelectorAll(".option-btn").forEach(b=>b.classList.remove("selected"));
-          btn.classList.add("selected");
+          if(alreadySelected){
+            document.getElementById(fieldId).value = "";
+          } else {
+            document.getElementById(fieldId).value = btn.dataset.value;
+            btn.classList.add("selected");
+          }
         });
       });
     });
