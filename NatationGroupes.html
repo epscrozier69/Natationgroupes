@@ -1407,7 +1407,7 @@
       <style>
         *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
         body{font-family:system-ui,sans-serif;margin:12px;color:#0f172a;background:#fff;}
-        @media print{body{margin:0;}@page{margin:8mm;size:A4 landscape;}}
+        @media print{body{margin:0;}@page{margin:8mm;size:A4 portrait;}}
       </style>
     </head><body>
       ${_pdfCreneauBlock(title, classes, profFort, profMoyen, profNon)}
@@ -1594,7 +1594,7 @@
 
   function exportTousGroupesPDF(){
     const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Groupes Natation 2026-2027</title>
-      <style>*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}body{font-family:system-ui,sans-serif;margin:12px;color:#0f172a;background:#fff;}@media print{body{margin:0;}@page{margin:8mm;size:A4 landscape;}}</style>
+      <style>*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}body{font-family:system-ui,sans-serif;margin:12px;color:#0f172a;background:#fff;}@media print{body{margin:0;}@page{margin:8mm;size:A4 portrait;}}</style>
     </head><body>
       ${CRENEAUX.map((cr,i)=>`<div style="${i>0?'break-before:page;':''}">${_pdfCreneauBlock(cr.title,cr.classes,cr.profFort,cr.profMoyen,cr.profNon)}</div>`).join("")}
       <script>window.onload=()=>{window.print();}<\/script>
