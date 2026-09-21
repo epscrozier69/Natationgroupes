@@ -360,6 +360,9 @@
   .gc-fort .gc-header{background:#3b82f6;color:#fff;}
   .gc-moyen .gc-header{background:#fb923c;color:#fff;}
   .gc-non .gc-header{background:#ef4444;color:#fff;}
+  .gc-absent .gc-header{background:#cbd5e1;color:#334155;}
+  .gc-dispense .gc-header{background:#7c3aed;color:#fff;}
+  .gc-nonintegre .gc-header{background:#475569;color:#fff;}
   .gc-body{background:var(--card);}
   .gc-eleve{
     display:flex;justify-content:space-between;align-items:center;
@@ -1227,18 +1230,24 @@
 
   function creneauFullCardHtml(title, classes, profFort, profMoyen, profNon){
     const st = combinedStats(classes);
-    const forts  = _groupeEleves(classes,"Fort");
-    const moyens = _groupeEleves(classes,"Moyen");
-    const nons   = _groupeEleves(classes,"Non nageur");
+    const byAlpha = (a,b)=>{ const nc=a.classe.localeCompare(b.classe); return nc!==0?nc:a.nom.localeCompare(b.nom)||a.prenom.localeCompare(b.prenom); };
+    const byStatut = s => students.filter(x=>classes.includes(x.classe)&&x.statut===s).sort(byAlpha);
+    const forts   = _groupeEleves(classes,"Fort");
+    const moyens  = _groupeEleves(classes,"Moyen");
+    const nons    = _groupeEleves(classes,"Non nageur");
+    const absents = byStatut("Absent");
+    const disps   = byStatut("Dispensé");
+    const nonint  = byStatut("Non intégré en EPS");
     const elRows = list => list.length===0
       ? `<div class="gc-empty">Aucun élève</div>`
       : list.map(s=>`<div class="gc-eleve"><span class="ge-name">${s.nom} ${s.prenom}</span><span class="ge-classe">${s.classe}</span></div>`).join("");
-    const gcol = (css,lbl,prof,cnt,list)=>`
+    const gcol = (css,lbl,prof,list,f,g)=>`
       <div class="gc-col ${css}">
         <div class="gc-header">
           <div class="gc-title">${lbl}</div>
-          <div class="gc-prof">${prof}</div>
-          <div class="gc-count">${cnt}</div>
+          ${prof ? `<div class="gc-prof">${prof}</div>` : ""}
+          <div class="gc-count">${list.length}</div>
+          <div style="font-size:.72rem;opacity:.85;margin-top:2px;">Filles : ${f} · Garçons : ${g}</div>
         </div>
         <div class="gc-body">${elRows(list)}</div>
       </div>`;
@@ -1257,18 +1266,15 @@
             <button class="btn" style="background:#6366f1;color:#fff;" onclick="exportGroupesPDF('${title}','${cp}','${profFort}','${profMoyen}','${profNon}')">🖨 PDF</button>
           </div>
         </div>
-        <div class="stat-pills">
-          ${sp("sp-fort","Fort",st.fort,st.fortFilles,st.fortGarcons)}
-          ${sp("sp-moyen","Moyen",st.moyen,st.moyenFilles,st.moyenGarcons)}
-          ${sp("sp-non","Non nag.",st.nonNageur,st.nonNageurFilles,st.nonNageurGarcons)}
-          ${sp("sp-absent","Absent",st.absent,st.absentFilles,st.absentGarcons)}
-          ${sp("sp-dispense","Dispensé",st.dispense,st.dispenseFilles,st.dispenseGarcons)}
-          ${sp("sp-nonintegre","Non intég.",st.nonIntegre,st.nonIntegreFilles,st.nonIntegreGarcons)}
-        </div>
         <div class="gc-grid">
-          ${gcol("gc-fort","Groupe Fort",profFort,forts.length,forts)}
-          ${gcol("gc-moyen","Groupe Moyen",profMoyen,moyens.length,moyens)}
-          ${gcol("gc-non","Non nageurs",profNon,nons.length,nons)}
+          ${gcol("gc-fort","Groupe Fort",profFort,forts,st.fortFilles,st.fortGarcons)}
+          ${gcol("gc-moyen","Groupe Moyen",profMoyen,moyens,st.moyenFilles,st.moyenGarcons)}
+          ${gcol("gc-non","Non nageurs",profNon,nons,st.nonNageurFilles,st.nonNageurGarcons)}
+        </div>
+        <div class="gc-grid" style="margin-top:8px;">
+          ${gcol("gc-absent","Absents","",absents,st.absentFilles,st.absentGarcons)}
+          ${gcol("gc-dispense","Dispensés","",disps,st.dispenseFilles,st.dispenseGarcons)}
+          ${gcol("gc-nonintegre","Non intégrés EPS","",nonint,st.nonIntegreFilles,st.nonIntegreGarcons)}
         </div>
       </div>`;
   }
