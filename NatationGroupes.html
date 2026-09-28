@@ -205,6 +205,7 @@
   th[data-col="actions"]{background:var(--col-actions);}
   .badge-absent{background:#cbd5e1;color:#334155;}
   .badge-dispense{background:#6366f1;color:#fff;}
+  .badge-dispense-nat{background:#7c3aed;color:#fff;}
   .badge-nonintegre{background:#334155;color:#fff;}
   .badge-fille{background:#ec4899;color:#fff;}
   .badge-garcon{background:#3b82f6;color:#fff;}
@@ -282,6 +283,8 @@
   .option-btn[data-value=""].selected{background:#22c55e;border-color:#22c55e;color:#fff;}
   .option-btn[data-value="Absent"].selected{background:#cbd5e1;border-color:#94a3b8;color:#334155;}
   .option-btn[data-value="Dispensé"].selected{background:#6366f1;border-color:#6366f1;color:#fff;}
+  .option-btn[data-value="DP"].selected{background:#6366f1;border-color:#6366f1;color:#fff;}
+  .option-btn[data-value="Dispensé natation"].selected{background:#7c3aed;border-color:#7c3aed;color:#fff;}
   .option-btn[data-value="Non intégré en EPS"].selected{background:#334155;border-color:#334155;color:#fff;}
   .confirm-card{
     background:#fff; border-radius:var(--radius); padding:24px 28px;
@@ -743,7 +746,7 @@
               <th><select data-filter="immersion">${filterOptionsHtml(IMMERSION_OPTS,"Tous")}</select></th>
               <th><select data-filter="groupe">${filterOptionsHtml(GROUPE_OPTS,"Tous")}</select></th>
               <th><input type="text" data-filter="commentaire" placeholder="Filtrer..."></th>
-              <th><select data-filter="statut"><option value="">Tous</option><option value="Absent">Absent</option><option value="Dispensé">Dispensé</option><option value="Non intégré en EPS">Non intégré</option></select></th>
+              <th><select data-filter="statut"><option value="">Tous</option><option value="Absent">Absent</option><option value="DP">DP</option><option value="Dispensé natation">Disp. natation</option><option value="Non intégré en EPS">Non intégré</option></select></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -905,6 +908,8 @@
   function statutBadge(statut){
     if(!statut) return "";
     if(statut==="Absent") return `<span class="badge badge-absent">Absent</span>`;
+    if(statut==="DP") return `<span class="badge badge-dispense">DP</span>`;
+    if(statut==="Dispensé natation") return `<span class="badge badge-dispense-nat">Disp. nat.</span>`;
     if(statut==="Dispensé") return `<span class="badge badge-dispense">Dispensé</span>`;
     if(statut==="Non intégré en EPS") return `<span class="badge badge-nonintegre">Non intégré</span>`;
     return "";
@@ -999,7 +1004,7 @@
               <th><select data-filter="immersion">${filterOptionsHtml(IMMERSION_OPTS,"Tous")}</select></th>
               <th><select data-filter="groupe">${filterOptionsHtml(GROUPE_OPTS,"Tous")}</select></th>
               <th><input type="text" data-filter="commentaire" placeholder="Filtrer..."></th>
-              <th><select data-filter="statut"><option value="">Tous</option><option value="Absent">Absent</option><option value="Dispensé">Dispensé</option><option value="Non intégré en EPS">Non intégré</option></select></th>
+              <th><select data-filter="statut"><option value="">Tous</option><option value="Absent">Absent</option><option value="DP">DP</option><option value="Dispensé natation">Disp. natation</option><option value="Non intégré en EPS">Non intégré</option></select></th>
               <th></th>
             </tr>
           </thead>
@@ -1113,7 +1118,9 @@
     const inStatut = (st) => list.filter(s=>s.statut===st);
     const sexCount = (arr, sexe) => arr.filter(s=>s.sexe===sexe).length;
     const fortArr = inGroup("Fort"), moyenArr = inGroup("Moyen"), nonArr = inGroup("Non nageur");
-    const absentArr = inStatut("Absent"), dispenseArr = inStatut("Dispensé"), nonIntegreArr = inStatut("Non intégré en EPS");
+    const absentArr = inStatut("Absent");
+    const dispenseArr = list.filter(s=>s.statut==="DP"||s.statut==="Dispensé natation"||s.statut==="Dispensé");
+    const nonIntegreArr = inStatut("Non intégré en EPS");
     return {
       total:list.length,
       filles:sexCount(list,"Fille"),
@@ -1236,12 +1243,18 @@
     const moyens  = _groupeEleves(classes,"Moyen");
     const nons    = _groupeEleves(classes,"Non nageur");
     const absents = byStatut("Absent");
-    const disps   = byStatut("Dispensé");
+    const disps   = students.filter(x=>classes.includes(x.classe)&&(x.statut==="DP"||x.statut==="Dispensé natation"||x.statut==="Dispensé")).sort(byAlpha);
     const nonint  = byStatut("Non intégré en EPS");
-    const elRows = list => list.length===0
+    const elRows = (list, showStatut=false) => list.length===0
       ? `<div class="gc-empty">Aucun élève</div>`
-      : list.map(s=>`<div class="gc-eleve"><span class="ge-name">${s.nom} ${s.prenom}</span><span class="ge-classe">${s.classe}</span></div>`).join("");
-    const gcol = (css,lbl,prof,list,f,g)=>`
+      : list.map(s=>`<div class="gc-eleve">
+          <span class="ge-name">${s.nom} ${s.prenom}</span>
+          <span style="display:flex;gap:4px;align-items:center;">
+            ${showStatut && s.statut ? `<span style="font-size:.65rem;background:#f1f5f9;border-radius:3px;padding:0 4px;color:#64748b;">${s.statut==="Dispensé natation"?"Disp.nat.":s.statut}</span>` : ""}
+            <span class="ge-classe">${s.classe}</span>
+          </span>
+        </div>`).join("");
+    const gcol = (css,lbl,prof,list,f,g,showSt=false)=>`
       <div class="gc-col ${css}">
         <div class="gc-header">
           <div class="gc-title">${lbl}</div>
@@ -1249,7 +1262,7 @@
           <div class="gc-count">${list.length}</div>
           <div style="font-size:.72rem;opacity:.85;margin-top:2px;">Filles : ${f} · Garçons : ${g}</div>
         </div>
-        <div class="gc-body">${elRows(list)}</div>
+        <div class="gc-body">${elRows(list,showSt)}</div>
       </div>`;
     const cp = JSON.stringify(classes).replace(/"/g,"&quot;");
     return `
@@ -1272,9 +1285,9 @@
           ${gcol("gc-non","Non nageurs",profNon,nons,st.nonNageurFilles,st.nonNageurGarcons)}
         </div>
         <div class="gc-grid" style="margin-top:8px;">
-          ${gcol("gc-absent","Absents","",absents,st.absentFilles,st.absentGarcons)}
-          ${gcol("gc-dispense","Dispensés","",disps,st.dispenseFilles,st.dispenseGarcons)}
-          ${gcol("gc-nonintegre","Non intégrés EPS","",nonint,st.nonIntegreFilles,st.nonIntegreGarcons)}
+          ${gcol("gc-absent","Absents","",absents,st.absentFilles,st.absentGarcons,false)}
+          ${gcol("gc-dispense","Dispensés (DP + nat.)","",disps,st.dispenseFilles,st.dispenseGarcons,true)}
+          ${gcol("gc-nonintegre","Non intégrés EPS","",nonint,st.nonIntegreFilles,st.nonIntegreGarcons,false)}
         </div>
       </div>`;
   }
@@ -1340,15 +1353,18 @@
     const moyens  = _groupeEleves(classes,"Moyen");
     const nons    = _groupeEleves(classes,"Non nageur");
     const absents = byStatut("Absent");
-    const disps   = byStatut("Dispensé");
+    const disps   = students.filter(x=>classes.includes(x.classe)&&(x.statut==="DP"||x.statut==="Dispensé natation"||x.statut==="Dispensé")).sort(byAlpha);
     const nonint  = byStatut("Non intégré en EPS");
 
-    const col=(bgColor,textColor,label,prof,list,f,g)=>{
+    const col=(bgColor,textColor,label,prof,list,f,g,showSt=false)=>{
       const rows = list.length===0
         ? `<div style="padding:5px 8px;font-size:9px;color:#94a3b8;font-style:italic;">Aucun élève</div>`
         : list.map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 7px;border-bottom:1px solid #f1f5f9;">
             <span style="font-size:9px;"><b>${s.nom}</b> ${s.prenom}</span>
-            <span style="background:#f1f5f9;border-radius:3px;padding:0 4px;color:#64748b;font-size:8px;white-space:nowrap;">${s.classe}</span>
+            <span style="display:flex;gap:3px;align-items:center;">
+              ${showSt && s.statut ? `<span style="background:#ede9fe;border-radius:3px;padding:0 4px;color:#6d28d9;font-size:7.5px;white-space:nowrap;">${s.statut==="Dispensé natation"?"Disp.nat.":s.statut}</span>` : ""}
+              <span style="background:#f1f5f9;border-radius:3px;padding:0 4px;color:#64748b;font-size:8px;white-space:nowrap;">${s.classe}</span>
+            </span>
           </div>`).join("");
       return `<div style="border-radius:7px;overflow:hidden;border:1px solid #e2e8f0;">
         <div style="background:${bgColor};color:${textColor};padding:7px 10px;">
@@ -1381,9 +1397,9 @@
         ${col("#ef4444","#fff","Non Nageurs",   profNon,   nons,   st.nonNageurFilles,  st.nonNageurGarcons)}
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
-        ${col("#cbd5e1","#334155","Absents",         "", absents, st.absentFilles,    st.absentGarcons)}
-        ${col("#7c3aed","#fff",   "Dispensés",       "", disps,   st.dispenseFilles,  st.dispenseGarcons)}
-        ${col("#475569","#fff",   "Non intégrés EPS","", nonint,  st.nonIntegreFilles,st.nonIntegreGarcons)}
+        ${col("#cbd5e1","#334155","Absents",             "", absents, st.absentFilles,    st.absentGarcons,    false)}
+        ${col("#7c3aed","#fff",   "Dispensés (DP+nat.)","", disps,   st.dispenseFilles,  st.dispenseGarcons,  true)}
+        ${col("#475569","#fff",   "Non intégrés EPS",   "", nonint,  st.nonIntegreFilles,st.nonIntegreGarcons,false)}
       </div>`;
   }
 
@@ -1497,7 +1513,7 @@
         ${buildOptionField("modal-dorsale","Nage dorsale (10m)",DORSALE_OPTS)}
         ${buildOptionField("modal-immersion","Immersion",IMMERSION_OPTS)}
         ${buildOptionField("modal-groupe","Groupe",[["Fort","Fort"],["Moyen","Moyen"],["Non nageur","Non nageur"]])}
-        ${buildOptionField("modal-statut","Statut",[["Absent","Absent"],["Dispensé","Dispensé"],["Non intégré en EPS","Non intégré en EPS"]])}
+        ${buildOptionField("modal-statut","Statut",[["Absent","Absent"],["DP","DP (Disp. ponctuelle)"],["Dispensé natation","Dispensé natation"],["Non intégré en EPS","Non intégré en EPS"]])}
         <div class="option-field">
           <div class="option-label">Commentaires</div>
           <textarea id="modal-commentaire" rows="1" style="width:100%;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:.85rem;box-sizing:border-box;"></textarea>
