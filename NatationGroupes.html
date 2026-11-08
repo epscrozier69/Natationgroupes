@@ -711,6 +711,9 @@
     sec.innerHTML = `
       <div class="toolbar">
         <button class="btn btn-export" id="btn-export-excel">Exporter Excel</button>
+        <button class="btn btn-sync" id="btn-backup-json">💾 Sauvegarder (JSON)</button>
+        <button class="btn btn-sync" id="btn-restore-json">📂 Restaurer (JSON)</button>
+        <input type="file" id="input-restore-json" accept=".json,application/json" style="display:none">
         <button class="btn btn-import" id="btn-import-college">Importer la liste des élèves du collège</button>
       </div>
       <div class="table-wrap">
@@ -756,6 +759,9 @@
 
     document.getElementById("btn-import-college").addEventListener("click", importCollegeList);
     document.getElementById("btn-export-excel").addEventListener("click", ()=>exportExcel(null));
+    document.getElementById("btn-backup-json").addEventListener("click", backupJSON);
+    document.getElementById("btn-restore-json").addEventListener("click", ()=>document.getElementById("input-restore-json").click());
+    document.getElementById("input-restore-json").addEventListener("change", onRestoreFileSelected);
 
 
     sec.querySelectorAll("th[data-col]:not(.no-sort)").forEach(th=>{
@@ -1462,6 +1468,57 @@
     XLSX.utils.book_append_sheet(wb, ws, "Eleves");
     const suffix = classeFilter ? "_" + classeFilter : "";
     XLSX.writeFile(wb, `Eleves_Natation_2026-2027${suffix}.xlsx`);
+  }
+
+  // ===== Sauvegarde / Restauration (fichier JSON) =====
+
+  function backupJSON(){
+    const data = JSON.stringify(students, null, 2);
+    const blob = new Blob([data], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const datestr = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `Natation_Sauvegarde_${datestr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setSyncStatus("Sauvegarde JSON téléchargée ✓");
+  }
+
+  async function onRestoreFileSelected(e){
+    const file = e.target.files[0];
+    e.target.value = "";
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if(!Array.isArray(parsed)) throw new Error("Le fichier doit contenir une liste d'élèves (tableau JSON).");
+      const valid = parsed.every(s => s && typeof s==="object" && "nom" in s && "prenom" in s);
+      if(!valid) throw new Error("Le contenu du fichier ne ressemble pas à une sauvegarde d'élèves valide.");
+      if(!await showConfirm(`Restaurer ${parsed.length} élève(s) depuis ce fichier ?\n\nCeci remplacera toutes les données actuelles (locales et sur le serveur si synchronisé).`)) return;
+      parsed.forEach(s=>{
+        if(!s.id) s.id = uid();
+        if(!s.updatedAt) s.updatedAt = nowIso();
+      });
+      students = parsed;
+      saveLocal();
+      renderAll();
+      if(isValidWebAppUrl() && navigator.onLine){
+        _forceReplace = true;
+        setSyncStatus("Restauration effectuée ✓ — synchronisation...");
+        _queueSync();
+      } else if(isValidWebAppUrl()){
+        _localDirty = true;
+        setSyncStatus("Restauration effectuée ✓ — en attente de synchronisation");
+      } else {
+        setSyncStatus("Restauration effectuée ✓ (mode local)");
+      }
+    }catch(err){
+      alert("Erreur lors de la restauration :\n" + err.message);
+      setSyncStatus("Erreur de restauration");
+    }
   }
 
   // ===== Paramètres / synchronisation =====
