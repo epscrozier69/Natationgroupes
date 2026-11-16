@@ -486,6 +486,7 @@
   let classSortState = {};
   let generalFilterState = { nom:"", prenom:"", classe:"", sexe:"", entree:"", ventrale:"", dorsale:"", immersion:"", groupe:"", commentaire:"", statut:"" };
   let classFilterState = {};
+  let statsGroupSort = "classe"; // "classe" ou "alpha"
 
   function loadLocal(){
     try{ students = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ students = []; }
@@ -1224,32 +1225,54 @@
   function buildStatsTab(){
     document.getElementById("tab-stats").innerHTML = `
       <div class="stats-grid" id="stats-global"></div>
-      <div style="display:flex;align-items:center;gap:12px;margin:24px 0 12px;">
+      <div style="display:flex;align-items:center;gap:12px;margin:24px 0 12px;flex-wrap:wrap;">
         <h3 style="margin:0;color:#1e3a8a;white-space:nowrap;">Statistiques regroupées</h3>
+        <div class="stats-sort-toggle" style="display:flex;align-items:center;gap:6px;background:#f1f5f9;border-radius:8px;padding:4px;">
+          <button type="button" class="btn-sort-mode" data-sort-mode="classe" style="font-size:.78rem;padding:5px 12px;border:none;border-radius:6px;cursor:pointer;">Par classe</button>
+          <button type="button" class="btn-sort-mode" data-sort-mode="alpha" style="font-size:.78rem;padding:5px 12px;border:none;border-radius:6px;cursor:pointer;">Alphabétique</button>
+        </div>
         <button class="btn btn-export" onclick="exportTousGroupesExcel()" style="font-size:.8rem;padding:7px 14px;">⬇ Excel — Lundi + Vendredi</button>
         <button class="btn" style="background:#6366f1;color:#fff;font-size:.8rem;padding:7px 14px;" onclick="exportTousGroupesPDF()">🖨 PDF — Lundi + Vendredi</button>
       </div>
       <div class="stats-grid" id="stats-groupes"></div>
     `;
+    document.getElementById("tab-stats").querySelectorAll(".btn-sort-mode").forEach(b=>{
+      b.addEventListener("click", ()=>{
+        statsGroupSort = b.dataset.sortMode;
+        renderStats();
+      });
+    });
+  }
+  function _updateSortModeButtons(){
+    document.querySelectorAll(".btn-sort-mode").forEach(b=>{
+      const active = b.dataset.sortMode === statsGroupSort;
+      b.style.background = active ? "#1e3a8a" : "transparent";
+      b.style.color = active ? "#fff" : "#334155";
+      b.style.fontWeight = active ? "700" : "400";
+    });
+  }
+  function _sortEleves(list){
+    const cmp = statsGroupSort === "alpha"
+      ? (a,b)=> a.nom.localeCompare(b.nom)||a.prenom.localeCompare(b.prenom)
+      : (a,b)=> { const nc=a.classe.localeCompare(b.classe); return nc!==0?nc:a.nom.localeCompare(b.nom)||a.prenom.localeCompare(b.prenom); };
+    return list.sort(cmp);
   }
   function combinedStats(classesArr){
     return computeStats(students.filter(s=>classesArr.includes(s.classe)));
   }
 
   function _groupeEleves(classes, groupe){
-    const byAlpha = (a,b)=>{ const nc=a.classe.localeCompare(b.classe); return nc!==0?nc:a.nom.localeCompare(b.nom)||a.prenom.localeCompare(b.prenom); };
-    return students.filter(s=>classes.includes(s.classe)&&s.groupe===groupe).sort(byAlpha);
+    return _sortEleves(students.filter(s=>classes.includes(s.classe)&&s.groupe===groupe));
   }
 
   function creneauFullCardHtml(title, classes, profFort, profMoyen, profNon){
     const st = combinedStats(classes);
-    const byAlpha = (a,b)=>{ const nc=a.classe.localeCompare(b.classe); return nc!==0?nc:a.nom.localeCompare(b.nom)||a.prenom.localeCompare(b.prenom); };
-    const byStatut = s => students.filter(x=>classes.includes(x.classe)&&x.statut===s).sort(byAlpha);
+    const byStatut = s => _sortEleves(students.filter(x=>classes.includes(x.classe)&&x.statut===s));
     const forts   = _groupeEleves(classes,"Fort");
     const moyens  = _groupeEleves(classes,"Moyen");
     const nons    = _groupeEleves(classes,"Non nageur");
     const absents = byStatut("Absent");
-    const disps   = students.filter(x=>classes.includes(x.classe)&&(x.statut==="DP"||x.statut==="Dispensé natation"||x.statut==="Dispensé")).sort(byAlpha);
+    const disps   = _sortEleves(students.filter(x=>classes.includes(x.classe)&&(x.statut==="DP"||x.statut==="Dispensé natation"||x.statut==="Dispensé")));
     const nonint  = byStatut("Non intégré en EPS");
     const elRows = (list, showStatut=false) => list.length===0
       ? `<div class="gc-empty">Aucun élève</div>`
@@ -1353,13 +1376,12 @@
 
   function _pdfCreneauBlock(title, classes, profFort, profMoyen, profNon){
     const st = combinedStats(classes);
-    const byAlpha = (a,b)=>{ const nc=a.classe.localeCompare(b.classe); return nc!==0?nc:a.nom.localeCompare(b.nom)||a.prenom.localeCompare(b.prenom); };
-    const byStatut = s => students.filter(x=>classes.includes(x.classe)&&x.statut===s).sort(byAlpha);
+    const byStatut = s => _sortEleves(students.filter(x=>classes.includes(x.classe)&&x.statut===s));
     const forts   = _groupeEleves(classes,"Fort");
     const moyens  = _groupeEleves(classes,"Moyen");
     const nons    = _groupeEleves(classes,"Non nageur");
     const absents = byStatut("Absent");
-    const disps   = students.filter(x=>classes.includes(x.classe)&&(x.statut==="DP"||x.statut==="Dispensé natation"||x.statut==="Dispensé")).sort(byAlpha);
+    const disps   = _sortEleves(students.filter(x=>classes.includes(x.classe)&&(x.statut==="DP"||x.statut==="Dispensé natation"||x.statut==="Dispensé")));
     const nonint  = byStatut("Non intégré en EPS");
 
     const col=(bgColor,textColor,label,prof,list,f,g,showSt=false)=>{
@@ -1433,6 +1455,7 @@
     document.getElementById("stats-groupes").innerHTML =
       creneauFullCardHtml("LUNDI — 6ème1 + 6ème2",   ["6ème1","6ème2"], "Mme JOUD", "Mme MEKRALDI",     "Mme CROZIER")
     + creneauFullCardHtml("VENDREDI — 6ème3 + 6ème4", ["6ème3","6ème4"], "Mme JOUD", "M. GOUTTE-TOQUET", "Mme CROZIER");
+    _updateSortModeButtons();
   }
 
   function renderAll(){
