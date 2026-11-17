@@ -107,7 +107,6 @@
     color:#fff;
   }
   .btn-add{background:#2563eb;}
-  .btn-import{background:#7c3aed;margin-left:auto;}
   .btn-export{background:#94a3b8;}
   .btn-cancel{background:#64748b;}
   .btn-danger{background:#dc2626;}
@@ -428,6 +427,9 @@
   <h1>🏊 EPS : Groupe de Natation pour l'année 2026-2027</h1>
   <div class="sync-zone">
     <span id="sync-status">Mode local</span>
+    <button class="icon-btn" id="btn-backup-json" title="Sauvegarder les données (JSON)">💾 Sauvegarder</button>
+    <button class="icon-btn" id="btn-restore-json" title="Restaurer les données depuis un fichier JSON">📂 Restaurer</button>
+    <input type="file" id="input-restore-json" accept=".json,application/json" style="display:none">
   </div>
 </header>
 
@@ -712,10 +714,6 @@
     sec.innerHTML = `
       <div class="toolbar">
         <button class="btn btn-export" id="btn-export-excel">Exporter Excel</button>
-        <button class="btn btn-sync" id="btn-backup-json">💾 Sauvegarder (JSON)</button>
-        <button class="btn btn-sync" id="btn-restore-json">📂 Restaurer (JSON)</button>
-        <input type="file" id="input-restore-json" accept=".json,application/json" style="display:none">
-        <button class="btn btn-import" id="btn-import-college">Importer la liste des élèves du collège</button>
       </div>
       <div class="table-wrap">
         <table id="table-general">
@@ -758,11 +756,7 @@
       </div>
     `;
 
-    document.getElementById("btn-import-college").addEventListener("click", importCollegeList);
     document.getElementById("btn-export-excel").addEventListener("click", ()=>exportExcel(null));
-    document.getElementById("btn-backup-json").addEventListener("click", backupJSON);
-    document.getElementById("btn-restore-json").addEventListener("click", ()=>document.getElementById("input-restore-json").click());
-    document.getElementById("input-restore-json").addEventListener("change", onRestoreFileSelected);
 
 
     sec.querySelectorAll("th[data-col]:not(.no-sort)").forEach(th=>{
@@ -813,18 +807,19 @@
     });
   }
 
-  async function importCollegeList(){
+  async function importCollegeList(silent){
     if(!isValidWebAppUrl()){
-      alert("URL du Web App non configurée. Contactez l'administrateur.");
+      if(!silent) alert("URL du Web App non configurée. Contactez l'administrateur.");
       return;
     }
     try{
-      setSyncStatus("Import en cours… (peut prendre 10-20 s)");
+      setSyncStatus(silent ? "Mise à jour de la liste des élèves..." : "Import en cours… (peut prendre 10-20 s)");
       const collegeList = await fetchCollegeList();
       if(!Array.isArray(collegeList)){
         throw new Error("Réponse inattendue du serveur");
       }
       if(collegeList.length === 0){
+        if(silent){ setSyncStatus("Mode local"); return; }
         setSyncStatus("Import : aucun élève trouvé");
         alert("L'onglet source ne contient aucun élève, ou les colonnes n'ont pas été reconnues.\n\nVérifiez que l'onglet \"Liste des élèves du collège\" existe dans le Google Sheet et contient les colonnes Nom, Prénom, Classe, Sexe.");
         return;
@@ -833,14 +828,17 @@
       const sixiemes = collegeList.filter(r => CLASSES.includes(resolveClasse(r.classe)));
       const exclus = collegeList.length - sixiemes.length;
       if(sixiemes.length === 0){
+        if(silent){ setSyncStatus("Mode local"); return; }
         setSyncStatus("Import : aucun élève de 6ème trouvé");
         alert("Aucun élève de 6ème1 à 6ème4 trouvé dans le fichier source.\n\nVérifiez que la colonne Classe contient bien les valeurs 6ème1, 6ème2, 6ème3 ou 6ème4.");
         return;
       }
-      const exclusMsg = exclus > 0 ? `\n(${exclus} élève(s) d'autres niveaux ignorés)` : "";
-      if(!await showConfirm(sixiemes.length + " élève(s) de 6ème trouvé(s)." + exclusMsg + "\n\nCet import va remplacer la liste actuelle.\nLes résultats déjà saisis seront conservés.\n\nContinuer ?")){
-        setSyncStatus("Import annulé");
-        return;
+      if(!silent){
+        const exclusMsg = exclus > 0 ? `\n(${exclus} élève(s) d'autres niveaux ignorés)` : "";
+        if(!await showConfirm(sixiemes.length + " élève(s) de 6ème trouvé(s)." + exclusMsg + "\n\nCet import va remplacer la liste actuelle.\nLes résultats déjà saisis seront conservés.\n\nContinuer ?")){
+          setSyncStatus("Import annulé");
+          return;
+        }
       }
       let added = 0, conserves = 0;
       // Construire la nouvelle liste en conservant les résultats des élèves reconnus
@@ -871,15 +869,20 @@
       saveLocal();
       _localDirty = false;
       renderAll();
-      setSyncStatus("Import terminé ✓ — " + added + " ajouté(s), " + conserves + " conservé(s) avec résultats");
+      setSyncStatus((silent ? "Mise à jour ✓ — " : "Import terminé ✓ — ") + added + " ajouté(s), " + conserves + " conservé(s) avec résultats");
       // Pousser vers le Sheet en arrière-plan (non bloquant)
       if(isValidWebAppUrl() && navigator.onLine){
         pushRemote(students).catch(e=>{
           console.warn("Sync post-import échouée (données conservées localement):", e.message);
-          setSyncStatus("Import ✓ — sync différée (reconnexion prévue)");
+          setSyncStatus((silent ? "Mise à jour" : "Import") + " ✓ — sync différée (reconnexion prévue)");
         });
       }
     }catch(e){
+      if(silent){
+        console.warn("Mise à jour automatique de la liste des élèves échouée:", e.message);
+        setSyncStatus("Mode local (mise à jour échouée)");
+        return;
+      }
       setSyncStatus("Erreur d'import");
       const isNetErr = /load failed|failed to fetch|network/i.test(e.message);
       const isJsonErr = /json|syntax|unexpected/i.test(e.message);
@@ -1638,12 +1641,15 @@
     buildTabs();
     initSettingsModal();
     initResultsModal();
+    document.getElementById("btn-backup-json").addEventListener("click", backupJSON);
+    document.getElementById("btn-restore-json").addEventListener("click", ()=>document.getElementById("input-restore-json").click());
+    document.getElementById("input-restore-json").addEventListener("change", onRestoreFileSelected);
     renderAll();
     if(!navigator.onLine){
       _offlineStatus();
     } else if(isValidWebAppUrl()){
       setSyncStatus("Synchronisation au démarrage...");
-      _queueSync();
+      _queueSync().then(()=>importCollegeList(true));
     } else {
       setSyncStatus(settings.webAppUrl ? "Mode local (URL invalide)" : "Mode local");
     }
